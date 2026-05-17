@@ -50,6 +50,11 @@ int query_add_float(
 	const bigfloat_t value
 );
 
+hquery_param_t* query_get_item(
+	hquery_t* const query,
+	const size_t index
+);
+
 char* query_get_string(
 	hquery_t* const query,
 	const char* const key

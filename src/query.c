@@ -92,6 +92,23 @@ hquery_param_t* query_get_param(
 	
 }
 
+hquery_param_t* query_get_item(
+	hquery_t* const query,
+	const size_t index
+) {
+	
+	hquery_param_t* parameter = NULL;
+	
+	if (index >= query->offset) {
+		return parameter;
+	}
+	
+	parameter = &query->parameters[index];
+	
+	return parameter;
+	
+}
+
 char* query_get_string(
 	hquery_t* const query,
 	const char* const key
@@ -540,6 +557,7 @@ void query_free(hquery_t* const query) {
 	
 	query->size = 0;
 	query->offset = 0;
+	query->options = 0;
 	
 	free(query->parameters);
 	query->parameters = NULL;
