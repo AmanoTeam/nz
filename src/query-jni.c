@@ -264,15 +264,14 @@ JNIEXPORT jint JNICALL paramGetBool(
 }
 
 
-JNIEXPORT void JNICALL queryInit(
+JNIEXPORT jlong JNICALL queryInit(
     JNIEnv* env,
     jobject obj,
-    jlong query,
     jchar sep,
     jstring subsep
 ) {
 
-    hquery_t* c_query = (hquery_t*) query;
+    hquery_t* c_query = malloc(sizeof(hquery_t));
     const char* c_subsep = NULL;
     
     if (subsep != NULL) {
@@ -284,7 +283,9 @@ JNIEXPORT void JNICALL queryInit(
     if (c_subsep != NULL) {
         (*env)->ReleaseStringUTFChars(env, subsep, c_subsep);
     }
-
+	
+	return (jlong) c_query:
+	
 }
 
 
