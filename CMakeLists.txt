@@ -113,6 +113,17 @@ set(
 )
 
 set(
+	LIBQUERY_JNI_SOURCE_FILES
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/query-jni.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/query.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/fstream.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/strsplit.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/urldecode.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/urlencode.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/hex.c"
+)
+
+set(
 	BEARSSL_SOURCE_FILES
 	"${BEARSSL_SOURCE_DIRECTORY}/src/settings.c"
 	"${BEARSSL_SOURCE_DIRECTORY}/src/aead/ccm.c"
@@ -691,6 +702,12 @@ if (NOUZEN_BUILD_SHARED)
 		nz
 		SHARED
 		${NOUZEN_SOURCE_FILES}
+	)
+	
+	add_library(
+		query-jni
+		SHARED
+		${LIBQUERY_JNI_SOURCE_FILES}
 	)
 else()
 	add_executable(
