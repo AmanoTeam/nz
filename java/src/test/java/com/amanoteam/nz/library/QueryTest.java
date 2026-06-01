@@ -7,14 +7,14 @@ class QueryTest {
 
     @Test
     void createAndFree() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             assertNotNull(q);
         }
     }
 
     @Test
     void addStringAndRetrieve() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("name", "value");
             assertEquals("value", q.getString("name"));
         }
@@ -22,7 +22,7 @@ class QueryTest {
 
     @Test
     void updateExistingString() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("key", "old");
             q.add("key", "new");
             assertEquals("new", q.getString("key"));
@@ -31,7 +31,7 @@ class QueryTest {
 
     @Test
     void addIntAndRetrieve() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("count", 42L);
             assertEquals(42L, q.getInt("count"));
         }
@@ -39,7 +39,7 @@ class QueryTest {
 
     @Test
     void addUintAndRetrieve() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.addUint("size", 100L);
             assertEquals(100L, q.getUint("size"));
         }
@@ -47,7 +47,7 @@ class QueryTest {
 
     @Test
     void addFloatAndRetrieve() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("pi", 3.14);
             assertEquals(3.14, q.getFloat("pi"), 1e-10);
         }
@@ -55,7 +55,7 @@ class QueryTest {
 
     @Test
     void boolTrueValues() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("v1", "true");
             q.add("v2", "TRUE");
             q.add("v3", "True");
@@ -73,7 +73,7 @@ class QueryTest {
 
     @Test
     void boolFalseValues() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("v1", "false");
             q.add("v2", "FALSE");
             q.add("v3", "False");
@@ -89,14 +89,14 @@ class QueryTest {
 
     @Test
     void boolNonexistentReturnsNull() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             assertNull(q.getBool("nonexistent"));
         }
     }
 
     @Test
     void loadFromString() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.loadString("key1=val1&key2=val2");
             assertEquals("val1", q.getString("key1"));
             assertEquals("val2", q.getString("key2"));
@@ -105,15 +105,15 @@ class QueryTest {
 
     @Test
     void getItemByIndex() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("a", "1");
             q.add("b", "2");
 
-            QueryParam item0 = q.getItem(0);
+            final QueryParam item0 = q.getItem(0);
             assertNotNull(item0);
             assertEquals("1", item0.getString());
 
-            QueryParam item1 = q.getItem(1);
+            final QueryParam item1 = q.getItem(1);
             assertNotNull(item1);
             assertEquals("2", item1.getString());
         }
@@ -121,7 +121,7 @@ class QueryTest {
 
     @Test
     void getItemOutOfBoundsReturnsNull() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             assertNull(q.getItem(0));
             assertNull(q.getItem(99));
         }
@@ -129,16 +129,16 @@ class QueryTest {
 
     @Test
     void dumpString() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("key", "value");
-            String dumped = q.dumpString();
+            final String dumped = q.dumpString();
             assertTrue(dumped.contains("key=value"));
         }
     }
 
     @Test
     void loadEnviron() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.loadEnviron();
             assertNotNull(q.getString("PATH"));
         }
@@ -146,7 +146,7 @@ class QueryTest {
 
     @Test
     void loadFileFailsOnNonexistentFile() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             assertThrows(RuntimeException.class, () ->
                 q.loadFile("/nonexistent/file.conf"));
         }
@@ -154,14 +154,14 @@ class QueryTest {
 
     @Test
     void nonexistentKeyReturnsNull() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             assertNull(q.getString("nonexistent"));
         }
     }
 
     @Test
     void chainedAdds() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("a", "1").add("b", "2").add("c", "3");
             assertEquals("1", q.getString("a"));
             assertEquals("2", q.getString("b"));
@@ -171,7 +171,7 @@ class QueryTest {
 
     @Test
     void closedQueryThrowsOnUse() {
-        Query q = new Query();
+        final Query q = new Query();
         q.close();
         assertThrows(IllegalStateException.class, () -> q.add("k", "v"));
         assertThrows(IllegalStateException.class, () -> q.getString("k"));
@@ -179,25 +179,25 @@ class QueryTest {
 
     @Test
     void doubleCloseDoesNotThrow() {
-        Query q = new Query();
+        final Query q = new Query();
         q.close();
         q.close();
     }
 
     @Test
     void customSeparator() {
-        try (Query q = new Query(';', ":")) {
+        try (final Query q = new Query(';', ":")) {
             q.add("a", "1").add("b", "2");
-            String dumped = q.dumpString();
+            final String dumped = q.dumpString();
             assertTrue(dumped.contains("a:1") && dumped.contains("b:2"));
         }
     }
 
     @Test
     void queryParamFromItem() {
-        try (Query q = new Query()) {
+        try (final Query q = new Query()) {
             q.add("key", "42");
-            QueryParam param = q.getItem(0);
+            final QueryParam param = q.getItem(0);
             assertNotNull(param);
             assertEquals("42", param.getString());
             assertEquals(42, param.getInt());
@@ -207,11 +207,11 @@ class QueryTest {
 
     @Test
     void dumpFile() throws Exception {
-        java.nio.file.Path tmp = java.nio.file.Files.createTempFile("query", ".txt");
-        try (Query q = new Query()) {
+        final java.nio.file.Path tmp = java.nio.file.Files.createTempFile("query", ".txt");
+        try (final Query q = new Query()) {
             q.add("a", "1");
             q.dumpFile(tmp.toString());
-            String content = new String(java.nio.file.Files.readAllBytes(tmp));
+            final String content = new String(java.nio.file.Files.readAllBytes(tmp));
             assertTrue(content.contains("a=1"));
         } finally {
             java.nio.file.Files.deleteIfExists(tmp);

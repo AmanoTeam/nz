@@ -4,7 +4,7 @@ public class QueryParam implements AutoCloseable {
 
     private long nativePtr;
 
-    QueryParam(long nativePtr) {
+    QueryParam(final long nativePtr) {
         this.nativePtr = nativePtr;
     }
 
@@ -36,7 +36,7 @@ public class QueryParam implements AutoCloseable {
 
     public Boolean getBool() {
         ensureNotFreed();
-        int result = LibQuery.paramGetBool(nativePtr);
+        final int result = LibQuery.paramGetBool(nativePtr);
         if (result == -1) {
             return null;
         }

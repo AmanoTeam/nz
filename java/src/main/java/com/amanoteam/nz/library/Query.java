@@ -8,7 +8,7 @@ public class Query implements AutoCloseable {
         this('&', "=");
     }
 
-    public Query(char sep, String subsep) {
+    public Query(final char sep, final String subsep) {
         this.nativePtr = LibQuery.queryInit(sep, subsep);
     }
 
@@ -18,91 +18,91 @@ public class Query implements AutoCloseable {
         }
     }
 
-    public Query add(String key, String value) {
+    public Query add(final String key, final String value) {
         ensureNotFreed();
-        int status = LibQuery.queryAddString(nativePtr, key, value);
+        final int status = LibQuery.queryAddString(nativePtr, key, value);
         if (status != 0) {
             throw new RuntimeException("Failed to add string parameter: " + key);
         }
         return this;
     }
 
-    public Query add(String key, long value) {
+    public Query add(final String key, final long value) {
         ensureNotFreed();
-        int status = LibQuery.queryAddInt(nativePtr, key, value);
+        final int status = LibQuery.queryAddInt(nativePtr, key, value);
         if (status != 0) {
             throw new RuntimeException("Failed to add int parameter: " + key);
         }
         return this;
     }
 
-    public Query addUint(String key, long value) {
+    public Query addUint(final String key, final long value) {
         ensureNotFreed();
-        int status = LibQuery.queryAddUint(nativePtr, key, value);
+        final int status = LibQuery.queryAddUint(nativePtr, key, value);
         if (status != 0) {
             throw new RuntimeException("Failed to add uint parameter: " + key);
         }
         return this;
     }
 
-    public Query add(String key, double value) {
+    public Query add(final String key, final double value) {
         ensureNotFreed();
-        int status = LibQuery.queryAddFloat(nativePtr, key, value);
+        final int status = LibQuery.queryAddFloat(nativePtr, key, value);
         if (status != 0) {
             throw new RuntimeException("Failed to add float parameter: " + key);
         }
         return this;
     }
 
-    public String getString(String key) {
+    public String getString(final String key) {
         ensureNotFreed();
         return LibQuery.queryGetString(nativePtr, key);
     }
 
-    public long getInt(String key) {
+    public long getInt(final String key) {
         ensureNotFreed();
         return LibQuery.queryGetInt(nativePtr, key);
     }
 
-    public long getUint(String key) {
+    public long getUint(final String key) {
         ensureNotFreed();
         return LibQuery.queryGetUint(nativePtr, key);
     }
 
-    public double getFloat(String key) {
+    public double getFloat(final String key) {
         ensureNotFreed();
         return LibQuery.queryGetFloat(nativePtr, key);
     }
 
-    public Boolean getBool(String key) {
+    public Boolean getBool(final String key) {
         ensureNotFreed();
-        int result = LibQuery.queryGetBool(nativePtr, key);
+        final int result = LibQuery.queryGetBool(nativePtr, key);
         if (result == -1) {
             return null;
         }
         return result == 1;
     }
 
-    public QueryParam getItem(long index) {
+    public QueryParam getItem(final long index) {
         ensureNotFreed();
-        long paramPtr = LibQuery.queryGetItem(nativePtr, index);
+        final long paramPtr = LibQuery.queryGetItem(nativePtr, index);
         if (paramPtr == 0) {
             return null;
         }
         return new QueryParam(paramPtr);
     }
 
-    public void loadString(String string) {
+    public void loadString(final String string) {
         ensureNotFreed();
-        int status = LibQuery.queryLoadString(nativePtr, string);
+        final int status = LibQuery.queryLoadString(nativePtr, string);
         if (status != 0) {
             throw new RuntimeException("Failed to load query string");
         }
     }
 
-    public void loadFile(String filename) {
+    public void loadFile(final String filename) {
         ensureNotFreed();
-        int status = LibQuery.queryLoadFile(nativePtr, filename);
+        final int status = LibQuery.queryLoadFile(nativePtr, filename);
         if (status != 0) {
             throw new RuntimeException("Failed to load query file: " + filename);
         }
@@ -110,7 +110,7 @@ public class Query implements AutoCloseable {
 
     public void loadEnviron() {
         ensureNotFreed();
-        int status = LibQuery.queryLoadEnviron(nativePtr);
+        final int status = LibQuery.queryLoadEnviron(nativePtr);
         if (status != 0) {
             throw new RuntimeException("Failed to load environment variables");
         }
@@ -118,21 +118,21 @@ public class Query implements AutoCloseable {
 
     public String dumpString() {
         ensureNotFreed();
-        int size = LibQuery.queryDumpString(nativePtr, null);
+        final int size = LibQuery.queryDumpString(nativePtr, null);
         if (size < 0) {
             throw new RuntimeException("Failed to dump query string");
         }
-        byte[] buffer = new byte[size];
-        int len = LibQuery.queryDumpString(nativePtr, buffer);
+        final byte[] buffer = new byte[size];
+        final int len = LibQuery.queryDumpString(nativePtr, buffer);
         if (len < 0) {
             throw new RuntimeException("Failed to dump query string");
         }
         return new String(buffer, 0, len, java.nio.charset.StandardCharsets.UTF_8);
     }
 
-    public void dumpFile(String filename) {
+    public void dumpFile(final String filename) {
         ensureNotFreed();
-        int status = LibQuery.queryDumpFile(nativePtr, filename);
+        final int status = LibQuery.queryDumpFile(nativePtr, filename);
         if (status != 0) {
             throw new RuntimeException("Failed to dump query file: " + filename);
         }
