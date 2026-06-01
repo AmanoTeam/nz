@@ -10,4 +10,7 @@ lib*.*
 ffmpeg-build
 __pycache__
 *.egg-info
+java/.gradle/
+java/build/
+java/hs_err_pid*.log
 
