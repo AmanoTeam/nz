@@ -430,6 +430,8 @@ static JNINativeMethod JNI_NATIVES_METHODS[] = {
 };
 
 
+jint JNI_OnLoad_repository(JavaVM* vm, JNIEnv* env);
+
 jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 	
 	JNIEnv* env = NULL;
@@ -446,6 +448,10 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
     }
     
 	if ((*env)->RegisterNatives(env, class, JNI_NATIVES_METHODS, sizeof(JNI_NATIVES_METHODS) / sizeof(*JNI_NATIVES_METHODS)) < 0) {
+        return JNI_ERR;
+    }
+	
+	if (JNI_OnLoad_repository(vm, env) != JNI_OK) {
         return JNI_ERR;
     }
 	

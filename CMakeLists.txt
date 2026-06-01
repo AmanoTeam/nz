@@ -116,12 +116,7 @@ set(
 set(
 	LIBQUERY_JNI_SOURCE_FILES
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/query-jni.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/query.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/fstream.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/strsplit.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/urldecode.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/urlencode.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/hex.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/repository-jni.c"
 )
 
 set(
@@ -710,6 +705,10 @@ if (NOUZEN_BUILD_SHARED)
 		SHARED
 		${LIBQUERY_JNI_SOURCE_FILES}
 	)
+
+	target_link_libraries(query-jni PRIVATE nz)
+
+	set_target_properties(query-jni PROPERTIES BUILD_RPATH "$ORIGIN")
 
 	if (NOUZEN_ASAN)
 		target_compile_options(query-jni PRIVATE -fsanitize=address)

@@ -14,6 +14,8 @@ dependencies {
 test {
     useJUnitPlatform()
 
+    maxHeapSize = '1024m'
+
     def libPath = System.getProperty('java.library.path')
     if (libPath != null) {
         jvmArgs "-Djava.library.path=$libPath"
