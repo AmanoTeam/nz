@@ -284,7 +284,7 @@ JNIEXPORT jlong JNICALL queryInit(
         (*env)->ReleaseStringUTFChars(env, subsep, c_subsep);
     }
 	
-	return (jlong) c_query:
+	return (jlong) c_query;
 	
 }
 
