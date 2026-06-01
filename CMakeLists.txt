@@ -11,6 +11,7 @@ project(
 option(NOUZEN_LTO "Turn on compiler link-time optimizations" OFF)
 option(NOUZEN_UNICODE "Enable Unicode support for Windows builds" ON)
 option(NOUZEN_DBG "Build the main project with debugging symbols, even in release builds" OFF)
+option(NOUZEN_ASAN "Build with AddressSanitizer for the query-jni JNI library" OFF)
 option(NOUZEN_BUILD_SHARED "Build the project as a shared library" OFF)
 option(NOUZEN_SSL_VERIFY "Enable SSL certificate verification in the network library" ON)
 
@@ -709,6 +710,11 @@ if (NOUZEN_BUILD_SHARED)
 		SHARED
 		${LIBQUERY_JNI_SOURCE_FILES}
 	)
+
+	if (NOUZEN_ASAN)
+		target_compile_options(query-jni PRIVATE -fsanitize=address)
+		target_link_options(query-jni PRIVATE -fsanitize=address)
+	endif()
 else()
 	add_executable(
 		nz
