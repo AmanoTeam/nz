@@ -271,7 +271,7 @@ JNIEXPORT jlong JNICALL queryInit(
     jstring subsep
 ) {
 
-    hquery_t* c_query = malloc(sizeof(hquery_t));
+    hquery_t* c_query = calloc(1, sizeof(hquery_t));
     const char* c_subsep = NULL;
     
     if (subsep != NULL) {
@@ -357,7 +357,30 @@ JNIEXPORT jint JNICALL queryDumpString(
 ) {
 
     hquery_t* c_query = (hquery_t*) query;
-    return (jint) query_dump_string(c_query, NULL);
+
+    if (destination == NULL) {
+        return (jint) query_dump_string(c_query, NULL);
+    }
+
+    size_t size = query_dump_string(c_query, NULL);
+
+    if (size < 2) {
+        return 0;
+    }
+
+    char* buffer = malloc(size);
+
+    if (buffer == NULL) {
+        return -1;
+    }
+
+    query_dump_string(c_query, buffer);
+
+    jsize len = (jsize)(size - 1);
+    (*env)->SetByteArrayRegion(env, destination, 0, len, (jbyte*)buffer);
+
+    free(buffer);
+    return len;
 
 }
 
@@ -397,7 +420,7 @@ static JNINativeMethod JNI_NATIVES_METHODS[] = {
     {"paramGetFloat",    "(J)D",                                  (void*)paramGetFloat},
     {"queryGetBool",     "(JLjava/lang/String;)I",                (void*)queryGetBool},
     {"paramGetBool",     "(J)I",                                  (void*)paramGetBool},
-    {"queryInit",        "(JCLjava/lang/String;)V",               (void*)queryInit},
+    {"queryInit",        "(CLjava/lang/String;)J",                (void*)queryInit},
     {"queryLoadString",  "(JLjava/lang/String;)I",                (void*)queryLoadString},
     {"queryLoadFile",    "(JLjava/lang/String;)I",                (void*)queryLoadFile},
     {"queryLoadEnviron", "(J)I",                                  (void*)queryLoadEnviron},
@@ -416,7 +439,7 @@ jint JNI_OnLoad(JavaVM* vm, void* reserved) {
 		return JNI_ERR;
 	}
 	
-	class = (*env)->FindClass(env, "com/amanoteam/nz/libquery/LibQuery");
+	class = (*env)->FindClass(env, "com/amanoteam/nz/library/LibQuery");
 	
     if (class == NULL) {
         return JNI_ERR;
