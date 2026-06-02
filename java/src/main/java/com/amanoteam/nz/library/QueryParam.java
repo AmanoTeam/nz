@@ -2,41 +2,41 @@ package com.amanoteam.nz.library;
 
 public class QueryParam implements AutoCloseable {
 
-    private long nativePtr;
+    private long pointer;
 
-    QueryParam(final long nativePtr) {
-        this.nativePtr = nativePtr;
+    QueryParam(final long pointer) {
+        this.pointer = pointer;
     }
 
     private void ensureNotFreed() {
-        if (nativePtr == 0) {
+        if (pointer == 0) {
             throw new IllegalStateException("QueryParam has been closed");
         }
     }
 
     public String getString() {
         ensureNotFreed();
-        return LibQuery.paramGetString(nativePtr);
+        return LibQuery.paramGetString(pointer);
     }
 
     public long getInt() {
         ensureNotFreed();
-        return LibQuery.paramGetInt(nativePtr);
+        return LibQuery.paramGetInt(pointer);
     }
 
     public long getUint() {
         ensureNotFreed();
-        return LibQuery.paramGetUint(nativePtr);
+        return LibQuery.paramGetUint(pointer);
     }
 
     public double getFloat() {
         ensureNotFreed();
-        return LibQuery.paramGetFloat(nativePtr);
+        return LibQuery.paramGetFloat(pointer);
     }
 
     public Boolean getBool() {
         ensureNotFreed();
-        final int result = LibQuery.paramGetBool(nativePtr);
+        final int result = LibQuery.paramGetBool(pointer);
         if (result == -1) {
             return null;
         }
@@ -45,9 +45,9 @@ public class QueryParam implements AutoCloseable {
 
     @Override
     public void close() {
-        if (nativePtr != 0) {
-            LibQuery.paramFree(nativePtr);
-            nativePtr = 0;
+        if (pointer != 0) {
+            LibQuery.paramFree(pointer);
+            pointer = 0;
         }
     }
 }

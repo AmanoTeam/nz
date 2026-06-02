@@ -9,30 +9,30 @@ import java.util.stream.StreamSupport;
 
 public class PackageList implements Iterable<Package>, AutoCloseable {
 
-    private long nativePtr;
+    private long pointer;
     private final RepoList repoList;
     private final boolean ownsPtr;
 
-    PackageList(final long nativePtr, final RepoList repoList, final boolean ownsPtr) {
-        this.nativePtr = nativePtr;
+    PackageList(final long pointer, final RepoList repoList, final boolean ownsPtr) {
+        this.pointer = pointer;
         this.repoList = repoList;
         this.ownsPtr = ownsPtr;
     }
 
     private void ensureNotFreed() {
-        if (nativePtr == 0) {
+        if (pointer == 0) {
             throw new IllegalStateException("PackageList has been closed");
         }
     }
 
     public long size() {
         ensureNotFreed();
-        return Repository.pkgsGetSize(nativePtr);
+        return Repository.pkgsGetSize(pointer);
     }
 
     public Package get(final long index) {
         ensureNotFreed();
-        final long pkgPtr = Repository.pkgsGetItem(nativePtr, index);
+        final long pkgPtr = Repository.pkgsGetItem(pointer, index);
         if (pkgPtr == 0) {
             return null;
         }
@@ -90,9 +90,9 @@ public class PackageList implements Iterable<Package>, AutoCloseable {
 
     @Override
     public void close() {
-        if (nativePtr != 0 && ownsPtr) {
-            Repository.pkgsFree(nativePtr, 0);
+        if (pointer != 0 && ownsPtr) {
+            Repository.pkgsFree(pointer, 0);
         }
-        nativePtr = 0;
+        pointer = 0;
     }
 }

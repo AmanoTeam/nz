@@ -6,11 +6,11 @@ public class Repository {
         System.loadLibrary("query-jni");
     }
 
-    private final long nativePtr;
+    private final long pointer;
     private final RepoList repoList;
 
-    Repository(final long nativePtr, final RepoList repoList) {
-        this.nativePtr = nativePtr;
+    Repository(final long pointer, final RepoList repoList) {
+        this.pointer = pointer;
         this.repoList = repoList;
     }
 
@@ -93,59 +93,59 @@ public class Repository {
     // === Repository instance methods ===
 
     void ensureNotFreed() {
-        if (nativePtr == 0) {
+        if (pointer == 0) {
             throw new IllegalStateException("Repository native pointer is invalid");
         }
     }
 
     public int getType() {
         ensureNotFreed();
-        return repoGetType(nativePtr);
+        return repoGetType(pointer);
     }
 
     public String getName() {
         ensureNotFreed();
-        return repoGetName(nativePtr);
+        return repoGetName(pointer);
     }
 
     public String getRelease() {
         ensureNotFreed();
-        return repoGetRelease(nativePtr);
+        return repoGetRelease(pointer);
     }
 
     public String getResource() {
         ensureNotFreed();
-        return repoGetResource(nativePtr);
+        return repoGetResource(pointer);
     }
 
     public String getPlatform() {
         ensureNotFreed();
-        return repoGetPlatform(nativePtr);
+        return repoGetPlatform(pointer);
     }
 
     public String getLocation() {
         ensureNotFreed();
-        return repoGetLocation(nativePtr);
+        return repoGetLocation(pointer);
     }
 
     public String getSpecification() {
         ensureNotFreed();
-        return repoGetSpecification(nativePtr);
+        return repoGetSpecification(pointer);
     }
 
     public Architecture getArchitecture() {
         ensureNotFreed();
-        return Architecture.fromInt(repoGetArchitecture(nativePtr));
+        return Architecture.fromInt(repoGetArchitecture(pointer));
     }
 
     public String getBaseUri() {
         ensureNotFreed();
-        return repoGetBaseUri(nativePtr);
+        return repoGetBaseUri(pointer);
     }
 
     public PackageList getPackages() {
         ensureNotFreed();
-        final long ptr = repoGetPkgs(nativePtr);
+        final long ptr = repoGetPkgs(pointer);
         if (ptr == 0) {
             return null;
         }
