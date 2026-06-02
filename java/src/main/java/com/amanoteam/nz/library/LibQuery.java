@@ -3,7 +3,7 @@ package com.amanoteam.nz.library;
 class LibQuery {
 
     static {
-        System.loadLibrary("query-jni");
+        System.loadLibrary("nz-jni");
     }
 
     static native long queryInit(char sep, String subsep);

@@ -3,7 +3,7 @@ package com.amanoteam.nz.library;
 public class Repository {
 
     static {
-        System.loadLibrary("query-jni");
+        System.loadLibrary("nz-jni");
     }
 
     private final long pointer;

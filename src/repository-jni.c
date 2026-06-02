@@ -233,7 +233,9 @@ jstring pkgGetProvides(JNIEnv* env, jclass cls, jlong pkgPtr) {
 }
 
 jlong pkgGetMaintainers(JNIEnv* env, jclass cls, jlong pkgPtr) {
-    return (jlong) ((pkg_t*) pkgPtr)->maintainer;
+    pkg_t* pkg = (pkg_t*) pkgPtr;
+    if (!pkg->resolved) return 0;
+    return (jlong) pkg->maintainer;
 }
 
 jlong pkgGetRepo(JNIEnv* env, jclass cls, jlong pkgPtr) {

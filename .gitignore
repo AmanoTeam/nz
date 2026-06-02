@@ -14,3 +14,6 @@ java/.gradle/
 java/build/
 java/hs_err_pid*.log
 
+bbb/
+build-nz/
+

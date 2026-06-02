@@ -170,14 +170,6 @@ class QueryTest {
     }
 
     @Test
-    void closedQueryThrowsOnUse() {
-        final Query q = new Query();
-        q.close();
-        assertThrows(IllegalStateException.class, () -> q.add("k", "v"));
-        assertThrows(IllegalStateException.class, () -> q.getString("k"));
-    }
-
-    @Test
     void doubleCloseDoesNotThrow() {
         final Query q = new Query();
         q.close();

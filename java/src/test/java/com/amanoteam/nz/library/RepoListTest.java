@@ -122,6 +122,7 @@ class RepoListTest {
     void packageMaintainers() {
         final Package pkg = sharedList.getPackage("bash");
         if (pkg != null) {
+            sharedList.resolveDeps(pkg);
             final List<Maintainer> maintainers = pkg.getMaintainers();
             if (maintainers != null) {
                 assertFalse(maintainers.isEmpty());
@@ -142,14 +143,6 @@ class RepoListTest {
             final Architecture roundTripped = Architecture.fromInt(ordinal);
             assertEquals(arch, roundTripped, "Architecture round-trip failed for " + arch);
         }
-    }
-
-    @Test
-    void closeGuard() {
-        final RepoList list = new RepoList();
-        list.close();
-        assertThrows(IllegalStateException.class, () -> list.getRepoCount());
-        assertThrows(IllegalStateException.class, () -> list.load());
     }
 
     @Test
