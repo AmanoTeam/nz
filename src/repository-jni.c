@@ -1,6 +1,9 @@
 #include <jni.h>
 #include <stdlib.h>
 #include "repository.h"
+#include "options.h"
+#include "os/cpuinfo.h"
+#include "os/osdetect.h"
 
 static jstring string_from_c(JNIEnv* env, char* str) {
     if (str == NULL) {
@@ -135,6 +138,12 @@ jstring repoGetSpecification(JNIEnv* env, jclass cls, jlong repoPtr) {
 
 jint repoGetArchitecture(JNIEnv* env, jclass cls, jlong repoPtr) {
     return (jint) ((repo_t*) repoPtr)->architecture;
+}
+
+jstring repoGetBaseUri(JNIEnv* env, jclass cls, jlong repoPtr) {
+    base_uri_t* uri = repo_get_uri((repo_t*) repoPtr);
+    if (uri == NULL) return NULL;
+    return string_from_c(env, uri->value);
 }
 
 jlong repoGetPkgs(JNIEnv* env, jclass cls, jlong repoPtr) {
@@ -275,6 +284,70 @@ jstring maintainersGetEmail(JNIEnv* env, jclass cls, jlong maintainersPtr, jlong
     return string_from_c(env, m->items[index].email);
 }
 
+// ==================== Operations ====================
+
+jint repolistInstallPackage(JNIEnv* env, jclass cls, jlong listPtr, jobjectArray packages) {
+    repolist_t* list = (repolist_t*) listPtr;
+    jsize count = (*env)->GetArrayLength(env, packages);
+    char** c_pkgs = calloc((size_t)(count + 1), sizeof(char*));
+    if (c_pkgs == NULL) return -27;
+    for (jsize i = 0; i < count; i++) {
+        jstring js = (jstring) (*env)->GetObjectArrayElement(env, packages, i);
+        if (js != NULL) {
+            c_pkgs[i] = (char*) (*env)->GetStringUTFChars(env, js, NULL);
+        }
+    }
+    c_pkgs[count] = NULL;
+    jint result = (jint) repolist_install_package(list, c_pkgs);
+    for (jsize i = 0; i < count; i++) {
+        if (c_pkgs[i] != NULL) {
+            jstring js = (jstring) (*env)->GetObjectArrayElement(env, packages, i);
+            (*env)->ReleaseStringUTFChars(env, js, c_pkgs[i]);
+        }
+    }
+    free(c_pkgs);
+    return result;
+}
+
+jint repolistRemovePackage(JNIEnv* env, jclass cls, jlong listPtr, jobjectArray packages) {
+    repolist_t* list = (repolist_t*) listPtr;
+    jsize count = (*env)->GetArrayLength(env, packages);
+    char** c_pkgs = calloc((size_t)(count + 1), sizeof(char*));
+    if (c_pkgs == NULL) return -27;
+    for (jsize i = 0; i < count; i++) {
+        jstring js = (jstring) (*env)->GetObjectArrayElement(env, packages, i);
+        if (js != NULL) {
+            c_pkgs[i] = (char*) (*env)->GetStringUTFChars(env, js, NULL);
+        }
+    }
+    c_pkgs[count] = NULL;
+    jint result = (jint) repolist_remove_package(list, c_pkgs);
+    for (jsize i = 0; i < count; i++) {
+        if (c_pkgs[i] != NULL) {
+            jstring js = (jstring) (*env)->GetObjectArrayElement(env, packages, i);
+            (*env)->ReleaseStringUTFChars(env, js, c_pkgs[i]);
+        }
+    }
+    free(c_pkgs);
+    return result;
+}
+
+jint optionsLoad(JNIEnv* env, jclass cls, jstring directory) {
+    const char* c_dir = (*env)->GetStringUTFChars(env, directory, NULL);
+    jint result = (jint) options_load(c_dir);
+    (*env)->ReleaseStringUTFChars(env, directory, c_dir);
+    return result;
+}
+
+jint getNproc(JNIEnv* env, jclass cls) {
+    return (jint) get_nproc();
+}
+
+jstring osdetectGetPlatform(JNIEnv* env, jclass cls) {
+    const char* platform = osdetect_getplatform();
+    return string_from_c(env, (char*) platform);
+}
+
 // ==================== Architecture helpers ====================
 
 jstring archUnstringify(JNIEnv* env, jclass cls, jint arch) {
@@ -318,6 +391,7 @@ static JNINativeMethod JNI_NATIVES_METHODS[] = {
     {"repoGetSpecification", "(J)Ljava/lang/String;",                     (void*)repoGetSpecification},
     {"repoGetArchitecture",  "(J)I",                                      (void*)repoGetArchitecture},
     {"repoGetPkgs",          "(J)J",                                      (void*)repoGetPkgs},
+    {"repoGetBaseUri",       "(J)Ljava/lang/String;",                     (void*)repoGetBaseUri},
     // Package field accessors
     {"pkgGetName",           "(J)Ljava/lang/String;",                     (void*)pkgGetName},
     {"pkgGetVersion",        "(J)Ljava/lang/String;",                     (void*)pkgGetVersion},
@@ -349,6 +423,12 @@ static JNINativeMethod JNI_NATIVES_METHODS[] = {
     {"maintainersGetSize",   "(J)J",                                      (void*)maintainersGetSize},
     {"maintainersGetName",   "(JJ)Ljava/lang/String;",                    (void*)maintainersGetName},
     {"maintainersGetEmail",  "(JJ)Ljava/lang/String;",                    (void*)maintainersGetEmail},
+    // Operations
+    {"repolistInstallPackage",  "(J[Ljava/lang/String;)I",               (void*)repolistInstallPackage},
+    {"repolistRemovePackage",   "(J[Ljava/lang/String;)I",               (void*)repolistRemovePackage},
+    {"optionsLoad",             "(Ljava/lang/String;)I",                  (void*)optionsLoad},
+    {"getNproc",                "()I",                                    (void*)getNproc},
+    {"osdetectGetPlatform",     "()Ljava/lang/String;",                   (void*)osdetectGetPlatform},
     // Architecture helpers
     {"archUnstringify",      "(I)Ljava/lang/String;",                     (void*)archUnstringify},
     {"getArchitecture",      "(Ljava/lang/String;)I",                     (void*)getArchitecture2},

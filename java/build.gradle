@@ -14,7 +14,8 @@ dependencies {
 test {
     useJUnitPlatform()
 
-    maxHeapSize = '1024m'
+    maxHeapSize = '2048m'
+    maxParallelForks = 1
 
     def libPath = System.getProperty('java.library.path')
     if (libPath != null) {

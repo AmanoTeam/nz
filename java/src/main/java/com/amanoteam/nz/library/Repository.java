@@ -56,6 +56,11 @@ public class Repository {
         return Architecture.fromInt(LibRepository.repoGetArchitecture(nativePtr));
     }
 
+    public String getBaseUri() {
+        ensureNotFreed();
+        return LibRepository.repoGetBaseUri(nativePtr);
+    }
+
     public PackageList getPackages() {
         ensureNotFreed();
         final long ptr = LibRepository.repoGetPkgs(nativePtr);

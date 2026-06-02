@@ -1,6 +1,6 @@
 package com.amanoteam.nz.library;
 
-class LibRepository {
+public class LibRepository {
     static {
         System.loadLibrary("query-jni");
     }
@@ -36,6 +36,7 @@ class LibRepository {
     static native String repoGetSpecification(long repoPtr);
     static native int repoGetArchitecture(long repoPtr);
     static native long repoGetPkgs(long repoPtr);
+    static native String repoGetBaseUri(long repoPtr);
 
     // Package field accessors
     static native String pkgGetName(long pkgPtr);
@@ -70,6 +71,13 @@ class LibRepository {
     static native long maintainersGetSize(long maintainersPtr);
     static native String maintainersGetName(long maintainersPtr, long index);
     static native String maintainersGetEmail(long maintainersPtr, long index);
+
+    // Operations
+    public static native int repolistInstallPackage(long listPtr, String[] packages);
+    public static native int repolistRemovePackage(long listPtr, String[] packages);
+    public static native int optionsLoad(String directory);
+    public static native int getNproc();
+    public static native String osdetectGetPlatform();
 
     // Architecture helpers
     static native String archUnstringify(int arch);

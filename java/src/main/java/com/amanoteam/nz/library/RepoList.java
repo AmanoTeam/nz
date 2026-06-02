@@ -112,6 +112,22 @@ public class RepoList implements AutoCloseable {
         }
     }
 
+    public void installPackage(final String... packages) {
+        ensureNotFreed();
+        final int status = LibRepository.repolistInstallPackage(nativePtr, packages);
+        if (status != 0) {
+            throw new RuntimeException("Failed to install packages (error: " + status + ")");
+        }
+    }
+
+    public void removePackage(final String... packages) {
+        ensureNotFreed();
+        final int status = LibRepository.repolistRemovePackage(nativePtr, packages);
+        if (status != 0) {
+            throw new RuntimeException("Failed to remove packages (error: " + status + ")");
+        }
+    }
+
     @Override
     public void close() {
         if (nativePtr != 0) {
