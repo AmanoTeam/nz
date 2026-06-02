@@ -8,7 +8,7 @@ public class RepoList implements AutoCloseable {
     private long nativePtr;
 
     public RepoList() {
-        this.nativePtr = LibRepository.repolistCreate();
+        this.nativePtr = Repository.repolistCreate();
     }
 
     private void ensureNotFreed() {
@@ -18,19 +18,19 @@ public class RepoList implements AutoCloseable {
     }
 
     public static void setConfigDir(final String directory) {
-        final int status = LibRepository.repoSetConfigDir(directory);
+        final int status = Repository.repoSetConfigDir(directory);
         if (status != 0) {
             throw new RuntimeException("Failed to set config directory: " + directory);
         }
     }
 
     public static String getConfigDir() {
-        return LibRepository.repoGetConfigDir();
+        return Repository.repoGetConfigDir();
     }
 
     public void load() {
         ensureNotFreed();
-        final int status = LibRepository.repolistLoad(nativePtr);
+        final int status = Repository.repolistLoad(nativePtr);
         if (status != 0) {
             throw new RuntimeException("Failed to load repository list (error: " + status + ")");
         }
@@ -38,7 +38,7 @@ public class RepoList implements AutoCloseable {
 
     public void destroy() {
         ensureNotFreed();
-        final int status = LibRepository.repolistDestroy(nativePtr);
+        final int status = Repository.repolistDestroy(nativePtr);
         if (status != 0) {
             throw new RuntimeException("Failed to destroy repository cache (error: " + status + ")");
         }
@@ -46,12 +46,12 @@ public class RepoList implements AutoCloseable {
 
     public long getRepoCount() {
         ensureNotFreed();
-        return LibRepository.repolistGetSize(nativePtr);
+        return Repository.repolistGetSize(nativePtr);
     }
 
     public Repository getRepo(final long index) {
         ensureNotFreed();
-        final long ptr = LibRepository.repolistGetRepo(nativePtr, index);
+        final long ptr = Repository.repolistGetRepo(nativePtr, index);
         if (ptr == 0) {
             return null;
         }
@@ -70,7 +70,7 @@ public class RepoList implements AutoCloseable {
 
     public PackageList getInstalled() {
         ensureNotFreed();
-        final long ptr = LibRepository.repolistGetInstalled(nativePtr);
+        final long ptr = Repository.repolistGetInstalled(nativePtr);
         if (ptr == 0) {
             return null;
         }
@@ -79,7 +79,7 @@ public class RepoList implements AutoCloseable {
 
     public Package getPackage(final String name) {
         ensureNotFreed();
-        final long ptr = LibRepository.repolistGetPkg(nativePtr, name);
+        final long ptr = Repository.repolistGetPkg(nativePtr, name);
         if (ptr == 0) {
             return null;
         }
@@ -88,7 +88,7 @@ public class RepoList implements AutoCloseable {
 
     public PackageList search(final String query, final long position, final long maximum) {
         ensureNotFreed();
-        final long ptr = LibRepository.repolistSearchPkg(nativePtr, query, position, maximum);
+        final long ptr = Repository.repolistSearchPkg(nativePtr, query, position, maximum);
         if (ptr == 0) {
             return null;
         }
@@ -97,7 +97,7 @@ public class RepoList implements AutoCloseable {
 
     public Repository getPackageRepo(final Package pkg) {
         ensureNotFreed();
-        final long ptr = LibRepository.repolistGetPkgRepo(nativePtr, pkg.getNativePtr());
+        final long ptr = Repository.repolistGetPkgRepo(nativePtr, pkg.getNativePtr());
         if (ptr == 0) {
             return null;
         }
@@ -106,7 +106,7 @@ public class RepoList implements AutoCloseable {
 
     public void resolveDeps(final Package pkg) {
         ensureNotFreed();
-        final int status = LibRepository.repolistResolveDeps(nativePtr, pkg.getNativePtr());
+        final int status = Repository.repolistResolveDeps(nativePtr, pkg.getNativePtr());
         if (status != 0) {
             throw new RuntimeException("Failed to resolve dependencies for " + pkg.getName());
         }
@@ -114,7 +114,7 @@ public class RepoList implements AutoCloseable {
 
     public void installPackage(final String... packages) {
         ensureNotFreed();
-        final int status = LibRepository.repolistInstallPackage(nativePtr, packages);
+        final int status = Repository.repolistInstallPackage(nativePtr, packages);
         if (status != 0) {
             throw new RuntimeException("Failed to install packages (error: " + status + ")");
         }
@@ -122,7 +122,7 @@ public class RepoList implements AutoCloseable {
 
     public void removePackage(final String... packages) {
         ensureNotFreed();
-        final int status = LibRepository.repolistRemovePackage(nativePtr, packages);
+        final int status = Repository.repolistRemovePackage(nativePtr, packages);
         if (status != 0) {
             throw new RuntimeException("Failed to remove packages (error: " + status + ")");
         }
@@ -131,7 +131,7 @@ public class RepoList implements AutoCloseable {
     @Override
     public void close() {
         if (nativePtr != 0) {
-            LibRepository.repolistFree(nativePtr);
+            Repository.repolistFree(nativePtr);
             nativePtr = 0;
         }
     }

@@ -25,82 +25,82 @@ public class Package {
 
     public String getName() {
         ensureNotFreed();
-        return LibRepository.pkgGetName(nativePtr);
+        return Repository.pkgGetName(nativePtr);
     }
 
     public String getVersion() {
         ensureNotFreed();
-        return LibRepository.pkgGetVersion(nativePtr);
+        return Repository.pkgGetVersion(nativePtr);
     }
 
     public String getDescription() {
         ensureNotFreed();
-        return LibRepository.pkgGetDescription(nativePtr);
+        return Repository.pkgGetDescription(nativePtr);
     }
 
     public String getHomepage() {
         ensureNotFreed();
-        return LibRepository.pkgGetHomepage(nativePtr);
+        return Repository.pkgGetHomepage(nativePtr);
     }
 
     public String getBugs() {
         ensureNotFreed();
-        return LibRepository.pkgGetBugs(nativePtr);
+        return Repository.pkgGetBugs(nativePtr);
     }
 
     public String getFilename() {
         ensureNotFreed();
-        return LibRepository.pkgGetFilename(nativePtr);
+        return Repository.pkgGetFilename(nativePtr);
     }
 
     public long getSize() {
         ensureNotFreed();
-        return LibRepository.pkgGetSize(nativePtr);
+        return Repository.pkgGetSize(nativePtr);
     }
 
     public long getInstalledSize() {
         ensureNotFreed();
-        return LibRepository.pkgGetInstalledSize(nativePtr);
+        return Repository.pkgGetInstalledSize(nativePtr);
     }
 
     public Architecture getArchitecture() {
         ensureNotFreed();
-        return Architecture.fromInt(LibRepository.pkgGetArchitecture(nativePtr));
+        return Architecture.fromInt(Repository.pkgGetArchitecture(nativePtr));
     }
 
     public boolean isObsolete() {
         ensureNotFreed();
-        return LibRepository.pkgGetObsolete(nativePtr);
+        return Repository.pkgGetObsolete(nativePtr);
     }
 
     public boolean isInstalled() {
         ensureNotFreed();
-        return LibRepository.pkgGetInstalled(nativePtr);
+        return Repository.pkgGetInstalled(nativePtr);
     }
 
     public boolean isUpgradable() {
         ensureNotFreed();
-        return LibRepository.pkgGetUpgradable(nativePtr);
+        return Repository.pkgGetUpgradable(nativePtr);
     }
 
     public boolean isRemovable() {
         ensureNotFreed();
-        return LibRepository.pkgGetRemovable(nativePtr);
+        return Repository.pkgGetRemovable(nativePtr);
     }
 
     public boolean isAutoInstall() {
         ensureNotFreed();
-        return LibRepository.pkgGetAutoinstall(nativePtr);
+        return Repository.pkgGetAutoinstall(nativePtr);
     }
 
     public String getProvides() {
         ensureNotFreed();
-        return LibRepository.pkgGetProvides(nativePtr);
+        return Repository.pkgGetProvides(nativePtr);
     }
 
     public PackageList getDepends() {
         ensureNotFreed();
-        final long ptr = LibRepository.pkgGetDepends(nativePtr);
+        final long ptr = Repository.pkgGetDepends(nativePtr);
         if (ptr == 0) {
             return null;
         }
@@ -109,7 +109,7 @@ public class Package {
 
     public PackageList getRecommends() {
         ensureNotFreed();
-        final long ptr = LibRepository.pkgGetRecommends(nativePtr);
+        final long ptr = Repository.pkgGetRecommends(nativePtr);
         if (ptr == 0) {
             return null;
         }
@@ -118,7 +118,7 @@ public class Package {
 
     public PackageList getSuggests() {
         ensureNotFreed();
-        final long ptr = LibRepository.pkgGetSuggests(nativePtr);
+        final long ptr = Repository.pkgGetSuggests(nativePtr);
         if (ptr == 0) {
             return null;
         }
@@ -127,7 +127,7 @@ public class Package {
 
     public PackageList getBreaks() {
         ensureNotFreed();
-        final long ptr = LibRepository.pkgGetBreaks(nativePtr);
+        final long ptr = Repository.pkgGetBreaks(nativePtr);
         if (ptr == 0) {
             return null;
         }
@@ -136,7 +136,7 @@ public class Package {
 
     public PackageList getReplaces() {
         ensureNotFreed();
-        final long ptr = LibRepository.pkgGetReplaces(nativePtr);
+        final long ptr = Repository.pkgGetReplaces(nativePtr);
         if (ptr == 0) {
             return null;
         }
@@ -145,15 +145,15 @@ public class Package {
 
     public List<Maintainer> getMaintainers() {
         ensureNotFreed();
-        final long ptr = LibRepository.pkgGetMaintainers(nativePtr);
+        final long ptr = Repository.pkgGetMaintainers(nativePtr);
         if (ptr == 0) {
             return null;
         }
-        final long size = LibRepository.maintainersGetSize(ptr);
+        final long size = Repository.maintainersGetSize(ptr);
         final List<Maintainer> result = new ArrayList<>((int) size);
         for (long i = 0; i < size; i++) {
-            final String name = LibRepository.maintainersGetName(ptr, i);
-            final String email = LibRepository.maintainersGetEmail(ptr, i);
+            final String name = Repository.maintainersGetName(ptr, i);
+            final String email = Repository.maintainersGetEmail(ptr, i);
             result.add(new Maintainer(name, email));
         }
         return result;
@@ -161,7 +161,7 @@ public class Package {
 
     public int getRepoIndex() {
         ensureNotFreed();
-        return (int) LibRepository.pkgGetRepo(nativePtr);
+        return (int) Repository.pkgGetRepo(nativePtr);
     }
 
     public Repository getRepository() {

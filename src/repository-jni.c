@@ -435,7 +435,7 @@ static JNINativeMethod JNI_NATIVES_METHODS[] = {
 };
 
 jint JNI_OnLoad_repository(JavaVM* vm, JNIEnv* env) {
-    jclass cls = (*env)->FindClass(env, "com/amanoteam/nz/library/LibRepository");
+    jclass cls = (*env)->FindClass(env, "com/amanoteam/nz/library/Repository");
     if (cls == NULL) {
         return JNI_ERR;
     }

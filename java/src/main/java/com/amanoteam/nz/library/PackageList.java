@@ -27,12 +27,12 @@ public class PackageList implements Iterable<Package>, AutoCloseable {
 
     public long size() {
         ensureNotFreed();
-        return LibRepository.pkgsGetSize(nativePtr);
+        return Repository.pkgsGetSize(nativePtr);
     }
 
     public Package get(final long index) {
         ensureNotFreed();
-        final long pkgPtr = LibRepository.pkgsGetItem(nativePtr, index);
+        final long pkgPtr = Repository.pkgsGetItem(nativePtr, index);
         if (pkgPtr == 0) {
             return null;
         }
@@ -91,7 +91,7 @@ public class PackageList implements Iterable<Package>, AutoCloseable {
     @Override
     public void close() {
         if (nativePtr != 0 && ownsPtr) {
-            LibRepository.pkgsFree(nativePtr, 0);
+            Repository.pkgsFree(nativePtr, 0);
         }
         nativePtr = 0;
     }

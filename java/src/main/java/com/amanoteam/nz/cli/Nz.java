@@ -45,7 +45,7 @@ public class Nz {
             System.exit(1);
         }
 
-        err = LibRepository.optionsLoad(configDir);
+        err = Repository.optionsLoad(configDir);
         if (err != 0) {
             System.err.println("fatal error: (" + err + ") Could not load options");
             System.exit(1);
@@ -111,7 +111,7 @@ public class Nz {
                     return;
                 }
                 case ACTION_VERSION: {
-                    final String platform = LibRepository.osdetectGetPlatform();
+                    final String platform = Repository.osdetectGetPlatform();
                     final String os = platform != null ? platform : osName;
                     System.out.println(PROJECT_NAME + " v" + PROJECT_VERSION + " (" + os + ")");
                     return;
