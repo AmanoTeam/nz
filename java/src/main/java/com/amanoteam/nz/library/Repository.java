@@ -92,59 +92,43 @@ public class Repository {
 
     // === Repository instance methods ===
 
-    void ensureNotFreed() {
-        if (pointer == 0) {
-            throw new IllegalStateException("Repository native pointer is invalid");
-        }
-    }
-
     public int getType() {
-        ensureNotFreed();
         return repoGetType(pointer);
     }
 
     public String getName() {
-        ensureNotFreed();
         return repoGetName(pointer);
     }
 
     public String getRelease() {
-        ensureNotFreed();
         return repoGetRelease(pointer);
     }
 
     public String getResource() {
-        ensureNotFreed();
         return repoGetResource(pointer);
     }
 
     public String getPlatform() {
-        ensureNotFreed();
         return repoGetPlatform(pointer);
     }
 
     public String getLocation() {
-        ensureNotFreed();
         return repoGetLocation(pointer);
     }
 
     public String getSpecification() {
-        ensureNotFreed();
         return repoGetSpecification(pointer);
     }
 
     public Architecture getArchitecture() {
-        ensureNotFreed();
         return Architecture.fromInt(repoGetArchitecture(pointer));
     }
 
     public String getBaseUri() {
-        ensureNotFreed();
         return repoGetBaseUri(pointer);
     }
 
     public PackageList getPackages() {
-        ensureNotFreed();
         final long ptr = repoGetPkgs(pointer);
         if (ptr == 0) {
             return null;

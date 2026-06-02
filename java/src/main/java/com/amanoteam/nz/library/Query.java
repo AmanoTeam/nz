@@ -12,14 +12,8 @@ public class Query implements AutoCloseable {
         this.pointer = LibQuery.queryInit(sep, subsep);
     }
 
-    private void ensureNotFreed() {
-        if (pointer == 0) {
-            throw new IllegalStateException("Query has been closed");
-        }
-    }
-
     public Query add(final String key, final String value) {
-        ensureNotFreed();
+        
         final int status = LibQuery.queryAddString(pointer, key, value);
         if (status != 0) {
             throw new RuntimeException("Failed to add string parameter: " + key);
@@ -28,7 +22,7 @@ public class Query implements AutoCloseable {
     }
 
     public Query add(final String key, final long value) {
-        ensureNotFreed();
+        
         final int status = LibQuery.queryAddInt(pointer, key, value);
         if (status != 0) {
             throw new RuntimeException("Failed to add int parameter: " + key);
@@ -37,7 +31,7 @@ public class Query implements AutoCloseable {
     }
 
     public Query addUint(final String key, final long value) {
-        ensureNotFreed();
+        
         final int status = LibQuery.queryAddUint(pointer, key, value);
         if (status != 0) {
             throw new RuntimeException("Failed to add uint parameter: " + key);
@@ -46,7 +40,7 @@ public class Query implements AutoCloseable {
     }
 
     public Query add(final String key, final double value) {
-        ensureNotFreed();
+        
         final int status = LibQuery.queryAddFloat(pointer, key, value);
         if (status != 0) {
             throw new RuntimeException("Failed to add float parameter: " + key);
@@ -55,27 +49,27 @@ public class Query implements AutoCloseable {
     }
 
     public String getString(final String key) {
-        ensureNotFreed();
+        
         return LibQuery.queryGetString(pointer, key);
     }
 
     public long getInt(final String key) {
-        ensureNotFreed();
+        
         return LibQuery.queryGetInt(pointer, key);
     }
 
     public long getUint(final String key) {
-        ensureNotFreed();
+        
         return LibQuery.queryGetUint(pointer, key);
     }
 
     public double getFloat(final String key) {
-        ensureNotFreed();
+        
         return LibQuery.queryGetFloat(pointer, key);
     }
 
     public Boolean getBool(final String key) {
-        ensureNotFreed();
+        
         final int result = LibQuery.queryGetBool(pointer, key);
         if (result == -1) {
             return null;
@@ -84,7 +78,7 @@ public class Query implements AutoCloseable {
     }
 
     public QueryParam getItem(final long index) {
-        ensureNotFreed();
+        
         final long paramPtr = LibQuery.queryGetItem(pointer, index);
         if (paramPtr == 0) {
             return null;
@@ -93,7 +87,7 @@ public class Query implements AutoCloseable {
     }
 
     public void loadString(final String string) {
-        ensureNotFreed();
+        
         final int status = LibQuery.queryLoadString(pointer, string);
         if (status != 0) {
             throw new RuntimeException("Failed to load query string");
@@ -101,7 +95,7 @@ public class Query implements AutoCloseable {
     }
 
     public void loadFile(final String filename) {
-        ensureNotFreed();
+        
         final int status = LibQuery.queryLoadFile(pointer, filename);
         if (status != 0) {
             throw new RuntimeException("Failed to load query file: " + filename);
@@ -109,7 +103,7 @@ public class Query implements AutoCloseable {
     }
 
     public void loadEnviron() {
-        ensureNotFreed();
+        
         final int status = LibQuery.queryLoadEnviron(pointer);
         if (status != 0) {
             throw new RuntimeException("Failed to load environment variables");
@@ -117,7 +111,7 @@ public class Query implements AutoCloseable {
     }
 
     public String dumpString() {
-        ensureNotFreed();
+        
         final int size = LibQuery.queryDumpString(pointer, null);
         if (size < 0) {
             throw new RuntimeException("Failed to dump query string");
@@ -131,7 +125,7 @@ public class Query implements AutoCloseable {
     }
 
     public void dumpFile(final String filename) {
-        ensureNotFreed();
+        
         final int status = LibQuery.queryDumpFile(pointer, filename);
         if (status != 0) {
             throw new RuntimeException("Failed to dump query file: " + filename);

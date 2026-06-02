@@ -17,89 +17,67 @@ public class Package {
         return pointer;
     }
 
-    void ensureNotFreed() {
-        if (pointer == 0) {
-            throw new IllegalStateException("Package native pointer is invalid");
-        }
-    }
-
     public String getName() {
-        ensureNotFreed();
         return Repository.pkgGetName(pointer);
     }
 
     public String getVersion() {
-        ensureNotFreed();
         return Repository.pkgGetVersion(pointer);
     }
 
     public String getDescription() {
-        ensureNotFreed();
         return Repository.pkgGetDescription(pointer);
     }
 
     public String getHomepage() {
-        ensureNotFreed();
         return Repository.pkgGetHomepage(pointer);
     }
 
     public String getBugs() {
-        ensureNotFreed();
         return Repository.pkgGetBugs(pointer);
     }
 
     public String getFilename() {
-        ensureNotFreed();
         return Repository.pkgGetFilename(pointer);
     }
 
     public long getSize() {
-        ensureNotFreed();
         return Repository.pkgGetSize(pointer);
     }
 
     public long getInstalledSize() {
-        ensureNotFreed();
         return Repository.pkgGetInstalledSize(pointer);
     }
 
     public Architecture getArchitecture() {
-        ensureNotFreed();
         return Architecture.fromInt(Repository.pkgGetArchitecture(pointer));
     }
 
     public boolean isObsolete() {
-        ensureNotFreed();
         return Repository.pkgGetObsolete(pointer);
     }
 
     public boolean isInstalled() {
-        ensureNotFreed();
         return Repository.pkgGetInstalled(pointer);
     }
 
     public boolean isUpgradable() {
-        ensureNotFreed();
         return Repository.pkgGetUpgradable(pointer);
     }
 
     public boolean isRemovable() {
-        ensureNotFreed();
         return Repository.pkgGetRemovable(pointer);
     }
 
     public boolean isAutoInstall() {
-        ensureNotFreed();
         return Repository.pkgGetAutoinstall(pointer);
     }
 
     public String getProvides() {
-        ensureNotFreed();
         return Repository.pkgGetProvides(pointer);
     }
 
     public PackageList getDepends() {
-        ensureNotFreed();
         final long ptr = Repository.pkgGetDepends(pointer);
         if (ptr == 0) {
             return null;
@@ -108,7 +86,6 @@ public class Package {
     }
 
     public PackageList getRecommends() {
-        ensureNotFreed();
         final long ptr = Repository.pkgGetRecommends(pointer);
         if (ptr == 0) {
             return null;
@@ -117,7 +94,6 @@ public class Package {
     }
 
     public PackageList getSuggests() {
-        ensureNotFreed();
         final long ptr = Repository.pkgGetSuggests(pointer);
         if (ptr == 0) {
             return null;
@@ -126,7 +102,6 @@ public class Package {
     }
 
     public PackageList getBreaks() {
-        ensureNotFreed();
         final long ptr = Repository.pkgGetBreaks(pointer);
         if (ptr == 0) {
             return null;
@@ -135,7 +110,6 @@ public class Package {
     }
 
     public PackageList getReplaces() {
-        ensureNotFreed();
         final long ptr = Repository.pkgGetReplaces(pointer);
         if (ptr == 0) {
             return null;
@@ -144,7 +118,6 @@ public class Package {
     }
 
     public List<Maintainer> getMaintainers() {
-        ensureNotFreed();
         final long ptr = Repository.pkgGetMaintainers(pointer);
         if (ptr == 0) {
             return null;
@@ -160,12 +133,10 @@ public class Package {
     }
 
     public int getRepoIndex() {
-        ensureNotFreed();
         return (int) Repository.pkgGetRepo(pointer);
     }
 
     public Repository getRepository() {
-        ensureNotFreed();
         return repoList.getRepo(getRepoIndex());
     }
 

@@ -19,19 +19,13 @@ public class PackageList implements Iterable<Package>, AutoCloseable {
         this.ownsPtr = ownsPtr;
     }
 
-    private void ensureNotFreed() {
-        if (pointer == 0) {
-            throw new IllegalStateException("PackageList has been closed");
-        }
-    }
-
     public long size() {
-        ensureNotFreed();
+        
         return Repository.pkgsGetSize(pointer);
     }
 
     public Package get(final long index) {
-        ensureNotFreed();
+        
         final long pkgPtr = Repository.pkgsGetItem(pointer, index);
         if (pkgPtr == 0) {
             return null;
@@ -45,7 +39,7 @@ public class PackageList implements Iterable<Package>, AutoCloseable {
 
     @Override
     public Iterator<Package> iterator() {
-        ensureNotFreed();
+        
         return new Iterator<Package>() {
             private long index = 0;
             private final long total = size();
