@@ -30,8 +30,7 @@ jobs:
         curl 'https://raw.githubusercontent.com/AmanoTeam/gha-free-space/refs/heads/master/main.sh' -sSf | bash 
     - name: Install required dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install build-essential || true
+        sudo apt-get --update install build-essential
     - name: Setup OBGGCC cross-compiler 
       run: |
         declare -r OBGGCC_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/obggcc/releases/latest')")"
@@ -56,12 +55,6 @@ jobs:
         echo '/tmp/pino/bin' >> "${GITHUB_PATH}"
         
         sudo sed --in-place '/CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG/d' '/usr/local/share/cmake-'*'/Modules/Platform/Android.cmake'
-        
-        rm \
-            "/tmp/pino/include/bionic/"{zconf,zlib}'.h' \
-            "/tmp/pino/"*'-unknown-linux-'{androideabi,android}'/include/'{zconf,zlib}'.h' \
-            "/tmp/pino/"*'-unknown-linux-android'*'/lib/libz.so' \
-            "/tmp/pino/"*'-unknown-linux-android'*'/lib/static/libz.so'
     - name: Setup Linux musl cross-compiler
       run: |
         declare -r RAIDEN_TAG="$(jq --raw-output '.tag_name' <<< "$(curl --connect-timeout '10' --retry '15' --retry-all-errors --fail --silent --url 'https://api.github.com/repos/AmanoTeam/Raiden/releases/latest')")"
