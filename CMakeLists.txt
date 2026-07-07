@@ -80,6 +80,7 @@ set(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/chmod.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/walkdir.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/fstream.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/stat.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/term/screen.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/term/keyboard.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/wildcard_match.c"

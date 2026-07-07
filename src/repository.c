@@ -22,6 +22,7 @@
 #include "fs/splitext.h"
 #include "fs/symlink.h"
 #include "fs/walkdir.h"
+#include "fs/stat.h"
 #include "guess_file_format.h"
 #include "guess_uri.h"
 #include "logging.h"
@@ -3899,9 +3900,9 @@ int repolist_remove_single_package(
 	
 	const char* entries = NULL;
 	
-	size_t removed = 0;
+	char name[4096];
 	
-	char* name = NULL;
+	size_t removed = 0;
 	
 	if (!pkg->installed) {
 		goto end;
@@ -3915,6 +3916,11 @@ int repolist_remove_single_package(
 	loggln(LOG_VERBOSE, "Removing package files from '%s'", pkg->name);
 	
 	options = get_options();
+	
+	if (set_current_directory(options->prefix) != 0) {
+		err = APTERR_FS_CHDIR_FAILURE;
+		goto end;
+	}
 	
 	entries = query_get_string(query, "Entries");
 	
@@ -3938,23 +3944,19 @@ int repolist_remove_single_package(
 			continue;
 		}
 		
-		name = malloc(strlen(options->prefix) + strlen(PATHSEP_S) + part.size + 1);
-		
-		if (name == NULL) {
-			err = APTERR_MEM_ALLOC_FAILURE;
-			goto end;
-		}
-		
-		strcpy(name, options->prefix);
-		strcat(name, PATHSEP_S);
-		strncat(name, part.begin, part.size);
+		strncpy(name, part.begin, part.size);
+		name[part.size] = '\0';
 		
 		status = -1;
 		
-		if (file_exists(name) == 1) {
-			status = remove_file(name);
-		} else if (directory_exists(name) == 1) {
-			status = remove_empty_directory(name);
+		switch (get_file_type(name)) {
+			case FILETYPE_DIRECTORY:
+				status = remove_empty_directory(name);
+				break;
+			case FILETYPE_SYMLINK:
+			case FILETYPE_REGULAR:
+				status = remove_file(name);
+				break;
 		}
 		
 		removed += (status == 0);
