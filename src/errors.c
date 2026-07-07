@@ -55,6 +55,8 @@ const char* apterr_getmessage(const int code) {
 			return "Could not create symbolic link";
 		case APTERR_FS_WALKDIR_FAILURE:
 			return "Could not iterate over the files at the specified location";
+		case APTERR_FS_COPY_FAILURE:
+			return "Could not copy file";
 		case APTERR_GET_APP_DIRECTORY_FAILURE:
 			return "Could not get application directory";
 		case APTERR_LOAD_UNSUPPORTED_URI:

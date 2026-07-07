@@ -32,6 +32,7 @@
 #define APTERR_FS_SYMLINK_FAILURE -22 /* Could not create symbolic link */
 #define APTERR_FS_WALKDIR_FAILURE -23 /* Could not iterate over the files at the specified location */
 #define APTERR_FS_CHDIR_FAILURE -24 /* Could not change the current working directory */
+#define APTERR_FS_COPY_FAILURE -244 /* Could not copy file */
 
 #define APTERR_GET_APP_DIRECTORY_FAILURE -25 /* Could not get application directory */
 

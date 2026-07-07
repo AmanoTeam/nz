@@ -17,6 +17,13 @@
 #include "sslcerts.h"
 #include "nouzen.h"
 #include "format.h"
+#include "fs/stat.h"
+#include "fs/cp.h"
+#include "fs/sep.h"
+#include "fs/chdir.h"
+#include "fs/mkdir.h"
+#include "fs/realpath.h"
+#include "elfutils/elfutils.h"
 #include "wcurl.h"
 #include "program_help.h"
 #include "os/cpuinfo.h"
@@ -30,6 +37,8 @@
 
 static const char KOPT_I[] = "i";
 static const char KOPT_INSTALL[] = "install";
+
+static const char KOPT_COPYLIBS[] = "copylibs";
 
 static const char KOPT_U[] = "u";
 static const char KOPT_UNINSTALL[] = "uninstall";
@@ -71,6 +80,8 @@ static const char KOPT_SEARCH[] = "search";
 
 static const char KOPT_SHOW[] = "show";
 
+static const char KOPT_OUTPUTDIR[] = "outputdir";
+
 #define ACTION_UNKNOWN (0x00)
 #define ACTION_INSTALL (0x01)
 #define ACTION_UNINSTALL (0x02)
@@ -85,6 +96,8 @@ static const char KOPT_SHOW[] = "show";
 #define ACTION_VERSION (0x11)
 #define ACTION_SEARCH (0x12)
 #define ACTION_SHOW (0x13)
+#define ACTION_COPYLIBS (0x14)
+#define ACTION_OUTPUTDIR (0x15)
 
 static int get_action(const arg_t* const arg) {
 	
@@ -198,6 +211,22 @@ static int get_action(const arg_t* const arg) {
 	
 	if (status) {
 		return ACTION_SHOW;
+	}
+	
+	status = (
+		strcmp(arg->key, KOPT_COPYLIBS) == 0
+	);
+	
+	if (status) {
+		return ACTION_COPYLIBS;
+	}
+	
+	status = (
+		strcmp(arg->key, KOPT_OUTPUTDIR) == 0
+	);
+	
+	if (status) {
+		return ACTION_OUTPUTDIR;
 	}
 	
 	return ACTION_UNKNOWN;
@@ -441,6 +470,170 @@ static int repolist_perform_show(repolist_t* const repolist, const char* const q
 	
 }
 
+int repolist_copy_libraries(
+	repolist_t* const list,
+	char* const* const source,
+	const char* const destination
+) {
+	
+	int status = 0;
+	int err = APTERR_SUCCESS;
+	
+	size_t index = 0;
+	
+	pkg_t* pkg = NULL;
+	pkgs_t pkgs = {0};
+	const char* name = NULL;
+	
+	const char* soname = NULL;
+	options_t* options = NULL;
+	
+	hquery_t* query = NULL;
+	
+	char* value = NULL;
+	char* offset = NULL;
+	
+	char input_file[4096];
+	char output_file[4096];
+	
+	pkgs_iter_t iter = {0};
+	
+	strsplit_t split = {0};
+	strsplit_part_t part = {0};
+	
+	elfutils_t elf = {0};
+	
+	value = expand_filename(destination);
+	
+	if (value == NULL) {
+		err = APTERR_EXPAND_FILENAME_FAILURE;
+		goto end;
+	}
+	
+	strcpy(output_file, value);
+	
+	if (create_directory(output_file) != 0) {
+		err = APTERR_FS_MKDIR_FAILURE;
+		goto end;
+	}
+	
+	strcat(output_file, PATHSEP_S);
+	
+	offset = strchr(output_file, '\0');
+	
+	free(value);
+	
+	options = get_options();
+	
+	if (set_current_directory(options->prefix) != 0) {
+		err = APTERR_FS_CHDIR_FAILURE;
+		goto end;
+	}
+	
+	for (index = 0; 1; index++) {
+		name = source[index];
+		
+		if (name == NULL) {
+			break;
+		}
+		
+		pkg = repolist_get_pkg(list, name);
+		
+		if (pkg == NULL) {
+			err = APTERR_PACKAGE_SEARCH_NO_MATCHES;
+			goto end;
+		}
+		
+		err = repolist_resolve_deps(list, pkg);
+		
+		if (err != APTERR_SUCCESS) {
+			goto end;
+		}
+		
+		if (!pkg->installed) {
+			err = APTERR_PACKAGE_SEARCH_NO_MATCHES;
+			goto end;
+		}
+		
+		pkgs_free(&pkgs, 0);
+		
+		err = pkgs_collect(&pkgs, pkg);
+		
+		if (err != APTERR_SUCCESS) {
+			goto end;
+		}
+		
+		pkgsiter_init(&iter, &pkgs);
+		
+		while ((pkg = pkgsiter_next(&iter)) != NULL) {
+			status = (
+				strcmp(pkg->name, "libc6") == 0 ||
+				strcmp(pkg->name, "libgcc1") == 0 ||
+				strcmp(pkg->name, "libstdc++5") == 0 ||
+				strcmp(pkg->name, "libstdc++6") == 0 ||
+				strncmp(pkg->name, "gcc-", 4) == 0
+			);
+			
+			if (status) {
+				continue;
+			}
+			
+			query = &pkg->installation.metadata;
+			
+			value = query_get_string(query, "Entries");
+			
+			if (value == NULL) {
+				err = APTERR_REPO_CONF_MISSING_FIELD;
+				goto end;
+			}
+			
+			strsplit_init(&split, &part, value, ",");
+			
+			while (strsplit_next(&split, &part) != NULL) {
+				strncpy(input_file, part.begin, part.size);
+				input_file[part.size] = '\0';
+				
+				if (get_file_type(input_file) != FILETYPE_REGULAR) {
+					continue;
+				}
+				
+				if (strstr(input_file, ".so") == NULL) {
+					continue;
+				}
+				
+				if (elf_load_file(&elf, input_file) != 0) {
+					continue;
+				}
+				
+				soname = elfutils_get_soname(&elf);
+				
+				if (soname == NULL) {
+					elfutils_free(&elf);
+					continue;
+				}
+				
+				strcpy(offset, soname);
+				
+				elfutils_free(&elf);
+				
+				printf("- copying file from '%s' to '%s'\n", input_file, output_file);
+				
+				if (copy_file(input_file, output_file) != 0) {
+					err = APTERR_FS_COPY_FAILURE;
+					goto end;
+				}
+			}
+		}
+		
+	}
+	
+	end:;
+	
+	pkgs_free(&pkgs, 0);
+	
+	return err;
+	
+}
 
 int main(int argc, argv_t* argv[]) {
 	
@@ -453,6 +646,7 @@ int main(int argc, argv_t* argv[]) {
 	ssize_t nproc = 0;
 	
 	const char* search_query = NULL;
+	const char* outputdir = NULL;
 	
 	char* value = NULL;
 	char* config_dir = NULL;
@@ -473,6 +667,8 @@ int main(int argc, argv_t* argv[]) {
 	
 	wcurl_t* wcurl = NULL;
 	wcurl_error_t* wcurl_error = NULL;
+	
+	arg_t karg = {0};
 	
 	#if defined(_WIN32) && defined(_UNICODE)
 		wio_enable_unicode();
@@ -534,6 +730,8 @@ int main(int argc, argv_t* argv[]) {
 		
 		switch (action) {
 			case ACTION_INSTALL:
+			case ACTION_COPYLIBS:
+			case ACTION_OUTPUTDIR:
 			case ACTION_UNINSTALL:
 			case ACTION_PARALLELISM:
 			case ACTION_PREFIX:
@@ -554,7 +752,8 @@ int main(int argc, argv_t* argv[]) {
 		
 		switch (action) {
 			case ACTION_INSTALL:
-			case ACTION_UNINSTALL: {
+			case ACTION_UNINSTALL: 
+			case ACTION_COPYLIBS: {
 				strsplit_init(&split, &part, arg->value, ";");
 				
 				while (strsplit_next(&split, &part) != NULL) {
@@ -614,6 +813,22 @@ int main(int argc, argv_t* argv[]) {
 				
 				break;
 			}
+			case ACTION_OUTPUTDIR: {
+				/*
+				free(options->prefix);
+				
+				options->prefix = malloc(strlen(arg->value) + 1);
+				
+				if (options->prefix == NULL) {
+					err = APTERR_MEM_ALLOC_FAILURE;
+					goto end;
+				}
+				
+				strcpy(options->prefix, arg->value);
+				*/
+				outputdir = arg->value;
+				break;
+			}
 			case ACTION_ASSUME_YES: {
 				options->assume_yes = 1;
 				break;
@@ -648,6 +863,20 @@ int main(int argc, argv_t* argv[]) {
 		}
 	}
 	
+	switch (operation) {
+		case ACTION_COPYLIBS: {
+			if (outputdir == NULL) {
+				karg.key = (char*) KOPT_OUTPUTDIR;
+				arg = &karg;
+				
+				err = APTERR_ARGPARSE_ARGUMENT_VALUE_MISSING;
+				goto end;
+			}
+			
+			break;
+		}
+	}
+	
 	packages[index++] = NULL;
 	
 	err = repolist_load(&list);
@@ -670,6 +899,10 @@ int main(int argc, argv_t* argv[]) {
 	}
 	
 	switch (operation) {
+		case ACTION_COPYLIBS: {
+			err = repolist_copy_libraries(&list, packages, outputdir);
+			break;
+		}
 		case ACTION_INSTALL: {
 			err = repolist_install_package(&list, packages);
 			break;

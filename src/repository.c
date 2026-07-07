@@ -3207,6 +3207,9 @@ int pkgs_collect(
 	pkgs_t* const pkgs,
 	pkg_t* const pkg
 ) {
+	/*
+	Recursively collects a package and all of its dependencies into a list.
+	*/
 	
 	int err = APTERR_SUCCESS;
 	

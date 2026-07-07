@@ -73,6 +73,7 @@ set(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/parentpath.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/realpath.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/rm.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/cp.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/stripsep.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/splitext.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/chdir.c"
@@ -111,6 +112,7 @@ set(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/wcurl.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/strsub.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/write_callback.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/elfutils/elfutils.c"
 )
 
 set(
