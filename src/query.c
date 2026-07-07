@@ -10,6 +10,8 @@
 #include "strsplit.h"
 #include "fs/fstream.h"
 
+#define QUERY_MAX_SIZE ((1024 * 1024) * 16)
+
 static const char AND = '&';
 static const char EQUAL[] = "=";
 
@@ -774,7 +776,7 @@ int query_load_file(
 	fstream_t* stream = NULL;
 	char* buffer = NULL;
 	
-	long int file_size = 0;
+	int64_t file_size = 0;
 	ssize_t rsize = 0;
 	
 	stream = fstream_open(filename, FSTREAM_READ);
@@ -786,7 +788,7 @@ int query_load_file(
 	
 	file_size = fsream_size(stream);
 	
-	if (file_size < 1) {
+	if (file_size < 1 || file_size > QUERY_MAX_SIZE) {
 		err = -1;
 		goto end;
 	}

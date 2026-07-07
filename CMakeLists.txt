@@ -753,6 +753,11 @@ target_compile_definitions(
 	CURL_SKIP_INCLUDE_MPRINTF
 )
 
+if (UNIX)
+	target_compile_definitions(nz PRIVATE _GNU_SOURCE)
+	target_compile_definitions(nz PRIVATE _FILE_OFFSET_BITS=64)
+endif()
+
 if (NOT NOUZEN_SSL_VERIFY)
 	target_compile_definitions(
 		nz

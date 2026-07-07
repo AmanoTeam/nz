@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
 #if defined(_WIN32)
@@ -19,6 +20,12 @@
 	#include "fs/absrel.h"
 	#include "fs/sep.h"
 #endif
+
+#if defined(__ANDROID__) && !defined(__LP64__) && __ANDROID_API__ < 24
+	#define fseeko fseek
+	#define ftello ftell
+#endif
+
 
 #if defined(_WIN32)
 	static DWORD* fstream_getmode(const fstream_mode_t mode, DWORD flags[2]) {
@@ -342,7 +349,7 @@ int fstream_write(fstream_t* const stream, const char* const buffer, const size_
 	
 }
 
-int fstream_seek(fstream_t* const stream, const long int offset, const fstream_seek_t method) {
+int fstream_seek(fstream_t* const stream, const int64_t offset, const fstream_seek_t method) {
 	/*
 	Sets the current file position.
 	
@@ -351,6 +358,9 @@ int fstream_seek(fstream_t* const stream, const long int offset, const fstream_s
 	
 	#if defined(_WIN32)
 		DWORD whence = 0;
+		
+		LARGE_INTEGER value = {0};
+		value.QuadPart = offset;
 		
 		switch (method) {
 			case FSTREAM_SEEK_BEGIN:
@@ -364,7 +374,7 @@ int fstream_seek(fstream_t* const stream, const long int offset, const fstream_s
 				break;
 		}
 		
-		if (SetFilePointer(stream->stream, offset, NULL, whence) == INVALID_SET_FILE_POINTER) {
+		if (SetFilePointerEx(stream->stream, value, NULL, whence) == INVALID_SET_FILE_POINTER) {
 			return FSTREAM_ERROR;
 		}
 	#else
@@ -391,41 +401,63 @@ int fstream_seek(fstream_t* const stream, const long int offset, const fstream_s
 	
 }
 
-long int fstream_tell(fstream_t* const stream) {
+int64_t fstream_tell(fstream_t* const stream) {
 	/*
 	Returns the current file offset.
 	
 	Returns (>=0) on success, (-1) on error.
 	*/
 	
+	int64_t value = 0;
+	
 	#if defined(_WIN32)
-		const DWORD value = SetFilePointer(stream->stream, 0, NULL, FILE_CURRENT);
+		LARGE_INTEGER offset = {0};
+		offset.QuadPart = 0;
 		
-		if (value == INVALID_SET_FILE_POINTER) {
+		if (SetFilePointerEx(stream->stream, offset, &offset, FILE_CURRENT) == FALSE) {
 			return FSTREAM_ERROR;
 		}
+		
+		value = offset.QuadPart;
 	#else
-		const long int value = ftello(stream->stream);
+		value = ftello(stream->stream);
 		
 		if (value == -1) {
 			return FSTREAM_ERROR;
 		}
 	#endif
 	
-	return (long int) value;
+	return value;
 	
 }
 
-long int fsream_size(fstream_t* const stream) {
+int fstream_getfd(fstream_t* const stream) {
+	/*
+	Returns the current file descriptor.
+	
+	Returns (>=0) on success, (-1) on error.
+	*/
+	
+	#if defined(_WIN32)
+		const int value = (int) stream->stream;
+	#else
+		const int value = fileno(stream->stream);
+	#endif
+	
+	return (int) value;
+	
+}
+
+int64_t fsream_size(fstream_t* const stream) {
 	/*
 	Returns the current file size.
 	
 	Returns (>=0) on success, (-1) on error.
 	*/
 	
-	const long int pos = fstream_tell(stream);
+	const int64_t pos = fstream_tell(stream);
 	
-	long int file_size = 0;
+	int64_t file_size = 0;
 	
 	int status = 0;
 	
@@ -451,7 +483,7 @@ long int fsream_size(fstream_t* const stream) {
 	
 }
 
-int fsream_truncate(fstream_t* const stream, const long int offset) {
+int fsream_truncate(fstream_t* const stream, const int64_t offset) {
 	/*
 	Truncates the file.
 	
@@ -461,9 +493,9 @@ int fsream_truncate(fstream_t* const stream, const long int offset) {
 	char zeros[1024];
 	
 	int status = 0;
-	const long int file_size = fsream_size(stream);
+	const int64_t file_size = fsream_size(stream);
 	
-	long int diff = 0;
+	int64_t diff = 0;
 	size_t write = 0;
 	
 	#if !defined(_WIN32)
@@ -482,10 +514,10 @@ int fsream_truncate(fstream_t* const stream, const long int offset) {
 		fstream_seek(stream, 0, FSTREAM_SEEK_END);
 	}
 	
-	diff = labs(offset - file_size);
+	diff = llabs(offset - file_size);
 	
 	while (diff != 0) {
-		write = (diff > (long int) sizeof(zeros)) ? (long int) sizeof(zeros) : diff;
+		write = (diff > (int64_t) sizeof(zeros)) ? (int64_t) sizeof(zeros) : diff;
 		
 		status = fstream_write(stream, zeros, write);
 		

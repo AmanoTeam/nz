@@ -454,10 +454,9 @@ int main(int argc, argv_t* argv[]) {
 	
 	const char* search_query = NULL;
 	
-	const char* operating_system = NULL;
+	char* value = NULL;
 	char* config_dir = NULL;
 	
-	char* value = NULL;
 	char* packages[PKGS_QUEUE_MAX];
 	
 	repolist_t list = {0};
@@ -501,9 +500,9 @@ int main(int argc, argv_t* argv[]) {
 		goto end;
 	}
 	
-	operating_system = osdetect_getplatform();
+	value = osdetect_getplatform();
 	
-	if (operating_system == NULL) {
+	if (value == NULL) {
 		err = APTERR_PLATFORM_UNKNOWN;
 		goto end;
 	}
@@ -633,7 +632,7 @@ int main(int argc, argv_t* argv[]) {
 				goto end;
 			}
 			case ACTION_VERSION: {
-				printf("%s v%s (%s)\n", PROJECT_NAME, PROJECT_VERSION, operating_system);
+				printf("%s v%s (%s)\n", PROJECT_NAME, PROJECT_VERSION, value);
 				goto end;
 			}
 			case ACTION_SEARCH:
@@ -662,6 +661,12 @@ int main(int argc, argv_t* argv[]) {
 	if (err == -1) {
 		err = APTERR_RLIMIT_NOFILE_FAILURE;
 		goto end;
+	}
+	
+	value = getenv("DEBIAN_FRONTEND");
+	
+	if (value != NULL && strcmp(value, "noninteractive") == 0) {
+		options->assume_yes = 1;
 	}
 	
 	switch (operation) {

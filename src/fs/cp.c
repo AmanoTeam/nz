@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <stdint.h>
+#include <errno.h>
 
 #if defined(_WIN32)
 	#include <windows.h>
@@ -16,6 +18,7 @@
 
 #if !(defined(_WIN32) || defined(__APPLE__))
 	#include "fs/fstream.h"
+	ssize_t copy_file_range(int, int64_t*, int, int64_t*, size_t, unsigned int) __attribute__((weak));
 #endif
 
 #include "fs/cp.h"
@@ -104,7 +107,9 @@ int copy_file(const char* const source, const char* const destination) {
 		fstream_t* input = fstream_open(source, FSTREAM_READ);
 		fstream_t* output = NULL;
 		
-		ssize_t size = 0;
+		ssize_t status = 0;
+		
+		off_t size = 0;
 		
 		char chunk[8192];
 		
@@ -118,6 +123,28 @@ int copy_file(const char* const source, const char* const destination) {
 		if (output == NULL) {
 			err = -1;
 			goto end;
+		}
+		
+		if (copy_file_range != NULL) {
+			int64_t off = 0;
+			int64_t remaining = fsream_size(input);
+
+			while (remaining > 0) {
+				status = copy_file_range(fstream_getfd(input), &off, fstream_getfd(output), NULL, remaining, 0);
+				
+				if (status <= 0) {
+					break;
+				}
+				
+				remaining -= status;
+			}
+
+			if (remaining == 0) {
+				goto end;
+			}
+
+			fstream_seek(input, 0, FSTREAM_SEEK_BEGIN);
+			fstream_seek(output, 0, FSTREAM_SEEK_BEGIN);
 		}
 		
 		while (1) {

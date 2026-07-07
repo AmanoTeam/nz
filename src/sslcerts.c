@@ -56,7 +56,6 @@ static int sslcerts_load_file(const char* const name) {
 	long int file_size = 0;
 	ssize_t rsize = 0;
 	
-	int status = 0;
 	int err = SSLCERTS_SUCCESS;
 	
 	stream = fstream_open(name, FSTREAM_READ);

@@ -85,8 +85,7 @@ static const char APK_FILE_EXT[] = ".apk";
 static const char KCONFIGURE[] = "configure";
 static const char KUPGRADE[] = "upgrade";
 static const char KINSTALL[] = "install";
-static const char KDISTS[] = "dists";
-static const char KBINARY[] = "binary-";
+
 
 static const char APT_INDEX_FILE[] = "Packages";
 static const char APK_INDEX_FILE[] = "APKINDEX";
@@ -94,16 +93,7 @@ static const char PACMAN_INDEX_FILE[] = "desc";
 
 static const char KHYPHEN[] = "-";
 
-static const char* const SYSTEM_LIBRARY_PATH[] = {
-	"usr" PATHSEP_M "local" PATHSEP_M "lib64",
-	"usr" PATHSEP_M "local" PATHSEP_M "lib",
-	"lib64",
-	"lib",
-	"usr" PATHSEP_M "lib64",
-	"usr" PATHSEP_M "lib"
-};
 
-static const char ELF_MAGIC_NUMBERS[] = {0x7f, 0x45, 0x4c, 0x46};
 
 static const char* const PACKAGES_FILE_EXT[] = {
 	XZ_FILE_EXT,
@@ -1309,7 +1299,6 @@ int repo_load_string(
 	char* location = NULL;
 	char* index_file = NULL;
 	
-	char* directory = NULL;
 	char* temporary_directory = NULL;
 	
 	const char* source = string;
@@ -1911,7 +1900,6 @@ int repolist_load(repolist_t* const list) {
 	int err = APTERR_SUCCESS;
 	int fetch_cache = APTERR_SUCCESS;
 	size_t index = 0;
-	size_t size = 0;
 	
 	size_t sources = 0;
 	
@@ -2484,8 +2472,6 @@ pkg_t* pkgs_get_virt_pkg(
 	strsplit_part_t part = {0};
 	
 	int matches = 0;
-	
-	const char* end = NULL;
 	
 	size = strlen(name);
 	
@@ -4014,20 +4000,12 @@ int repolist_install_single_package(
 	size_t index = 0;
 	size_t size = 0;
 	
-	ssize_t status = 0;
-	
 	repo_t* repo = NULL;
 	
 	char* command = NULL;
 	
 	const char* version = NULL;
 	const char* entry = NULL;
-	const char* file_extension = NULL;
-	const char* loader = NULL;
-	const char* triplet = NULL;
-	
-	const char* a = NULL;
-	const char* b = NULL;
 	
 	char* directory = NULL;
 	char* temporary_directory = NULL;
@@ -4043,8 +4021,6 @@ int repolist_install_single_package(
 	const walkdir_item_t* item = NULL;
 	
 	fstream_t* stream = NULL;
-	
-	char chunk[4];
 	
 	repo = repolist_get_pkg_repo(list, pkg);
 	
@@ -4349,10 +4325,7 @@ int repolist_install_single_package(
 		*match = '\0';
 	}
 	
-	loader = get_loader(pkg->arch);
-	triplet = get_triplet(pkg->arch);
-	
-	a = basename(loader);
+
 	
 	for (index = 0; index < entries.offset; index++) {
 		entry = entries.items[index];

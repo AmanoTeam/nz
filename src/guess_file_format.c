@@ -50,7 +50,7 @@ int format_guess_file(const char* const filename) {
 	ssize_t rsize = 0;
 	
 	char chunk[9];
-	struct FStream* stream = NULL;
+	fstream_t* stream = NULL;
 	
 	stream = fstream_open(filename, FSTREAM_READ);
 	
