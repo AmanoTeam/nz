@@ -793,7 +793,7 @@ static char* pkglist_to_aptlist(const int type, const char* const value) {
 				*begin = '-';
 			}
 			
-			if (a == '>' || a == '<' || a == '=') {
+			if (a == '>' || a == '<' || a == '=' || a == '~') {
 				size = (begin - part.begin);
 				
 				strncat(result, part.begin, size);
@@ -808,6 +808,10 @@ static char* pkglist_to_aptlist(const int type, const char* const value) {
 				
 				begin++;
 				b = *begin;
+				
+				if (a == '~') {
+					a = '=';
+				}
 				
 				sequence[0] = a;
 				
