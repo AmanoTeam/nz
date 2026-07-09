@@ -251,11 +251,25 @@ static int repolist_perform_search(repolist_t* const repolist, const char* const
 	
 	pkg_t* pkg = NULL;
 	
+	options_t* options = NULL;
+	
+	const char* fmt = "\r\n\033[92m%s\033[0m/%s %s %s\r\n  %s\r\n";
+	
 	paging.maximum = 15;
 	
 	cir_init(&cir);
 	
 	hide_cursor();
+	
+	options = get_options();
+	
+	if (options->assume_yes) {
+		paging.maximum = SIZE_MAX;
+	}
+	
+	if (!is_atty(stdout)) {
+		fmt = "\r\n%s/%s %s %s\r\n  %s\r\n";
+	}
 	
 	while (1) {
 		status = repolist_search_pkg(repolist, query, paging, &pkgs);
@@ -279,7 +293,7 @@ static int repolist_perform_search(repolist_t* const repolist, const char* const
 			repo = repolist_get_pkg_repo(repolist, pkg);
 			
 			printf(
-				"\r\n\033[92m%s\033[0m/%s %s %s\r\n  %s\r\n",
+				fmt,
 				pkg->name,
 				repo->release,
 				pkg->version,
@@ -896,6 +910,10 @@ int main(int argc, argv_t* argv[]) {
 	
 	if (value != NULL && strcmp(value, "noninteractive") == 0) {
 		options->assume_yes = 1;
+	}
+	
+	if (!options->assume_yes) {
+		options->assume_yes = !is_atty(stdout);
 	}
 	
 	switch (operation) {
