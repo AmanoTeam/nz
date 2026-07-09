@@ -52,7 +52,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-	"--copy",
+	"--copylibs",
 	metavar = "PACKAGE",
 	required = False,
 	help = "Copy libraries from the selected packages into a specific directory. Use a semicolon-separated list (e.g. 'pkg1;pkg2')."
