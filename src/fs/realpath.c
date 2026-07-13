@@ -153,7 +153,7 @@ char* expand_filename(const char* const filename) {
 		
 		len = strlen(filename);
 		
-		tmp = malloc(len + 1);
+		tmp = malloc(PATH_MAX);
 		
 		if (tmp == NULL) {
 			err = -1;
