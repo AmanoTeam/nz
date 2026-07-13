@@ -11,12 +11,9 @@
 	#include <errno.h>
 #endif
 
-#if defined(_WIN32)
-	#include "fs/absrel.h"
-#endif
-
 #include "fs/sep.h"
 #include "fs/realpath.h"
+#include "fs/absrel.h"
 
 char* expand_filename(const char* const filename) {
 	/*
@@ -129,11 +126,12 @@ char* expand_filename(const char* const filename) {
 	#else
 		char* tmp = NULL;
 		
+		const char* pos = NULL;
+		char ch = 0;
+		
 		size_t index = 0;
 		size_t len = 0;
 		size_t size = 0;
-		
-		errno = 0;
 		
 		expanded_filename = malloc(PATH_MAX);
 		
@@ -151,8 +149,6 @@ char* expand_filename(const char* const filename) {
 			goto end;
 		}
 		
-		len = strlen(filename);
-		
 		tmp = malloc(PATH_MAX);
 		
 		if (tmp == NULL) {
@@ -160,9 +156,22 @@ char* expand_filename(const char* const filename) {
 			goto end;
 		}
 		
+		if (isrelative(filename) && filename[0] != '.') {
+			strcpy(tmp, ".");
+			strcat(tmp, PATHSEP_S);
+			strcat(tmp, filename);
+			
+			free(expanded_filename);
+			expanded_filename = expand_filename(tmp);
+			
+			goto end;
+		}
+		
+		len = strlen(filename);
+		
 		for (index = len ; index-- > 0 ;) {
-			const char* const pos = &filename[index];
-			const char ch = *pos;
+			pos = &filename[index];
+			ch = *pos;
 			
 			if (ch != PATHSEP) {
 				continue;
@@ -170,8 +179,9 @@ char* expand_filename(const char* const filename) {
 			
 			size = (size_t) (pos - filename);
 			
-			memcpy(tmp, filename, size);
-			tmp[size] = '\0';
+			tmp[0] = '\0';
+			
+			strncat(tmp, filename, size);
 			
 			if (realpath(tmp, expanded_filename) == NULL) {
 				continue;
