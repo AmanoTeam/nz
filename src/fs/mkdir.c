@@ -5,7 +5,7 @@
 	#include <windows.h>
 	#include <fileapi.h>
 #endif
-
+#include <android/log.h>
 #if !defined(_WIN32)
 	#include <errno.h>
 	#include <sys/stat.h>
@@ -126,7 +126,7 @@ int create_directory(const char* const directory) {
 	#if defined(_WIN32)
 		int omit_next = isabsolute(directory);
 	#endif
-	
+	__android_log_vprint(ANDROID_LOG_DEBUG, "libnz", "%s", directory);
 	len = strlen(directory) + 1;
 	
 	for (index = 1; index < len; index++) {
