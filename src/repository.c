@@ -1928,6 +1928,7 @@ int repolist_load(repolist_t* const list) {
 	const char* architecture = NULL;
 	const char* specification = NULL;
 	int type = 0;
+	int status = 0;
 	
 	const char* file_extension = NULL;
 	const char* value = NULL;
@@ -2069,6 +2070,14 @@ int repolist_load(repolist_t* const list) {
 		if (err != 0) {
 			err = APTERR_REPO_CONF_PARSE_FAILURE;
 			goto end;
+		}
+		
+		/* Status */
+		status = query_get_bool(&query, "status");
+		
+		if (!status) {
+			loggln(LOG_VERBOSE, "Skipping repository (status = %i)", status);
+			continue;
 		}
 		
 		/* Format */
