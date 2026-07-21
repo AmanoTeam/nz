@@ -720,6 +720,10 @@ if (NOUZEN_BUILD_SHARED)
 		${LIBQUERY_JNI_SOURCE_FILES}
 	)
 
+	if (ANDROID)
+		target_link_libraries(nz PRIVATE log)
+	endif()
+	
 	target_link_libraries(nz-jni PRIVATE nz)
 
 	set_target_properties(nz-jni PROPERTIES BUILD_RPATH "$ORIGIN")

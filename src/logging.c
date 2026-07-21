@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__ANDROID__)
+	#include <android/log.h>
+#endif
+
 #if defined(_WIN32) && defined(_UNICODE)
 	#include "wio.h"
 #endif
@@ -18,13 +22,17 @@ static void logging(
 ) {
 	
 	if (type <= loglevel || ((type == LOG_WARN || type == LOG_ERROR) && loglevel != LOG_QUIET)) {
-		vfprintf(stderr, format, args);
-		
-		if (ln) {
-			fprintf(stderr, "\n");
-		}
-		
-		fflush(stderr);
+		#if defined(__ANDROID__)
+			__android_log_vprint(ANDROID_LOG_DEBUG, "libnz", format, args);
+		#else
+			vfprintf(stderr, format, args);
+			
+			if (ln) {
+				fprintf(stderr, "\n");
+			}
+			
+			fflush(stderr);
+		#endif
 	}
 	
 }
