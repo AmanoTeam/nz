@@ -561,6 +561,9 @@ void query_free(hquery_t* const query) {
 	query->offset = 0;
 	query->options = 0;
 	
+	free((void*) query->subsep);
+	query->subsep = NULL;
+	
 	free(query->parameters);
 	query->parameters = NULL;
 	
@@ -756,10 +759,12 @@ void query_init(
 		query->sep = AND;
 	}
 	
-	query->subsep = subsep;
+	if (subsep != NULL) {
+		query->subsep = strdup(subsep);
+	}
 	
 	if (query->subsep == NULL) {
-		query->subsep = EQUAL;
+		query->subsep = strdup(EQUAL);
 	}
 	
 	query->options |= (HQUERY_OPT_URL_ENCODE|HQUERY_OPT_URL_DECODE);

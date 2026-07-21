@@ -11,6 +11,7 @@ project(
 option(NOUZEN_LTO "Turn on compiler link-time optimizations" OFF)
 option(NOUZEN_UNICODE "Enable Unicode support for Windows builds" ON)
 option(NOUZEN_DBG "Build the main project with debugging symbols, even in release builds" OFF)
+option(NOUZEN_ASAN "Build with AddressSanitizer for the nz-jni JNI library" OFF)
 option(NOUZEN_BUILD_SHARED "Build the project as a shared library" OFF)
 option(NOUZEN_SSL_VERIFY "Enable SSL certificate verification in the network library" ON)
 
@@ -117,13 +118,8 @@ set(
 
 set(
 	LIBQUERY_JNI_SOURCE_FILES
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/query-jni.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/query.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/fs/fstream.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/strsplit.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/urldecode.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/urlencode.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/hex.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/nz-jni.c"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/repository-jni.c"
 )
 
 set(
@@ -719,10 +715,19 @@ if (NOUZEN_BUILD_SHARED)
 	)
 	
 	add_library(
-		query-jni
+		nz-jni
 		SHARED
 		${LIBQUERY_JNI_SOURCE_FILES}
 	)
+
+	target_link_libraries(nz-jni PRIVATE nz)
+
+	set_target_properties(nz-jni PROPERTIES BUILD_RPATH "$ORIGIN")
+
+	if (NOUZEN_ASAN)
+		target_compile_options(nz-jni PRIVATE -fsanitize=address)
+		target_link_options(nz-jni PRIVATE -fsanitize=address)
+	endif()
 else()
 	add_executable(
 		nz

@@ -1,0 +1,92 @@
+package com.amanoteam.nz.library;
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+public class PackageList implements Iterable<Package>, AutoCloseable {
+
+    private long pointer;
+    private final RepoList repoList;
+    private final boolean ownsPtr;
+
+    PackageList(final long pointer, final RepoList repoList, final boolean ownsPtr) {
+        this.pointer = pointer;
+        this.repoList = repoList;
+        this.ownsPtr = ownsPtr;
+    }
+
+    public long size() {
+        
+        return Repository.pkgsGetSize(pointer);
+    }
+
+    public Package get(final long index) {
+        
+        final long pkgPtr = Repository.pkgsGetItem(pointer, index);
+        if (pkgPtr == 0) {
+            return null;
+        }
+        return new Package(pkgPtr, repoList);
+    }
+
+    public boolean isEmpty() {
+        return size() == 0;
+    }
+
+    @Override
+    public Iterator<Package> iterator() {
+        
+        return new Iterator<Package>() {
+            private long index = 0;
+            private final long total = size();
+
+            private Package advance() {
+                while (index < total) {
+                    final Package pkg = get(index++);
+                    if (pkg != null) {
+                        return pkg;
+                    }
+                }
+                return null;
+            }
+
+            private Package nextPkg = advance();
+
+            @Override
+            public boolean hasNext() {
+                return nextPkg != null;
+            }
+
+            @Override
+            public Package next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                final Package result = nextPkg;
+                nextPkg = advance();
+                return result;
+            }
+        };
+    }
+
+    @Override
+    public Spliterator<Package> spliterator() {
+        return Spliterators.spliterator(iterator(), size(), 0);
+    }
+
+    public Stream<Package> stream() {
+        return StreamSupport.stream(spliterator(), false);
+    }
+
+    @Override
+    public void close() {
+        if (pointer != 0 && ownsPtr) {
+            Repository.pkgsFree(pointer, 0);
+        }
+        pointer = 0;
+    }
+}
