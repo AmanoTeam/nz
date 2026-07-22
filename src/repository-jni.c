@@ -4,7 +4,7 @@
 #include "options.h"
 #include "os/cpuinfo.h"
 #include "os/osdetect.h"
-
+#include <android/log.h> 
 static jstring string_from_c(JNIEnv* env, char* str) {
 	if (str == NULL) {
 		return NULL;
@@ -263,6 +263,7 @@ jlong pkgsGetSize(JNIEnv* env, jclass cls, jlong pkgsPtr) {
 jlong pkgsGetItem(JNIEnv* env, jclass cls, jlong pkgsPtr, jlong index) {
 	if (pkgsPtr == 0) return 0;
 	pkgs_t* pkgs = (pkgs_t*) pkgsPtr;
+	__android_log_print(ANDROID_LOG_VERBOSE, "libnz", "%d", index)
 	if ((size_t) index >= pkgs->offset) return 0;
 	return (jlong) pkgs->items[index];
 }
