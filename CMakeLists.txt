@@ -722,6 +722,7 @@ if (NOUZEN_BUILD_SHARED)
 
 	if (ANDROID)
 		target_link_libraries(nz PRIVATE log)
+		target_link_libraries(nz-jni PRIVATE log)
 	endif()
 	
 	target_link_libraries(nz-jni PRIVATE nz)
