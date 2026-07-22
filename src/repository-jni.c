@@ -96,8 +96,12 @@ jlong repolistSearchPkg(JNIEnv* env, jclass cls, jlong listPtr, jstring query, j
 	
 	repolist_search_pkg(list, c_query, paging, results);
 	
-	(*env)->ReleaseStringUTFChars(env, query, c_query);
+	if (c_query != NULL) {
+		(*env)->ReleaseStringUTFChars(env, query, c_query);
+	}
+	
 	return (jlong) results;
+	
 }
 
 jlong repolistGetPkgRepo(JNIEnv* env, jclass cls, jlong listPtr, jlong pkgPtr) {
