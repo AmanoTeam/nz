@@ -52,6 +52,14 @@ parser.add_argument(
 )
 
 parser.add_argument(
+	"-a",
+	"--autoremove",
+	required = False,
+	action = "store_true",
+	help = "Remove the automatically-installed packages that are no longer required by any installed package."
+)
+
+parser.add_argument(
 	"--copylibs",
 	metavar = "PACKAGE",
 	required = False,

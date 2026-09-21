@@ -20,6 +20,7 @@
 #define PKG_SECTION_FIELD_SIZE 0x0E
 #define PKG_SECTION_FIELD_INSTALLED_SIZE 0x0F
 #define PKG_SECTION_FIELD_FILENAME 0x10
+#define PKG_SECTION_FIELD_CONFLICTS 0x11
 
 enum Architecture {
 	ARCH_UNKNOWN,
@@ -67,6 +68,7 @@ struct Package {
 	void* suggests;
 	void* breaks;
 	void* replaces;
+	char* conflicts;
 	void* maintainer;
 	char* homepage;
 	char* bugs;

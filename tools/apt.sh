@@ -21,8 +21,10 @@ while [[ "${#}" -gt '0' ]]; do
 		action='--copylibs'
 	elif [ "${1}" = 'destroy' ]; then
 		action='--destroy'
-	elif [ "${1}" = 'remove' ] || [ "${1}" = 'uninstall' ] || [ "${1}" = 'autoremove' ] || [ "${1}" = 'purge' ]; then
+	elif [ "${1}" = 'remove' ] || [ "${1}" = 'uninstall' ] || [ "${1}" = 'purge' ]; then
 		action='--uninstall'
+	elif [ "${1}" = 'autoremove' ] || [ "${1}" = 'auto-remove' ]; then
+		action='--autoremove'
 	elif [ "${1}" = 'search' ] || [ "${1}" = 'show' ]; then
 		arg+="--${1}='${2}'"
 		shift
@@ -34,7 +36,7 @@ while [[ "${#}" -gt '0' ]]; do
 	elif [[ "${1}" == '-'* ]]; then
 		args+="${1} "
 	else
-		if ! [[ "${action}" = '--install' || "${action}" = '--uninstall' || "${action}" = '--copylibs' ]]; then
+		if ! [[ "${action}" = '--install' || "${action}" = '--uninstall' || "${action}" = '--autoremove' || "${action}" = '--copylibs' ]]; then
 			echo "fatal error: This argument is invalid or was not recognized: ${1}" 1>&2
 			exit '1'
 		fi
@@ -48,6 +50,10 @@ while [[ "${#}" -gt '0' ]]; do
 	
 	shift
 done
+
+if [ -n "${packages}" ] && [ "${action}" = '--autoremove' ]; then
+	action='--uninstall'
+fi
 
 if [ -n "${packages}" ]; then
 	packages="'${packages}'"

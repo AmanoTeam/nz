@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <curl/curl.h>
 
@@ -651,6 +652,8 @@ static const char* pkg_get_field_name(const int type, const int field) {
 					return "Suggests";
 				case PKG_SECTION_FIELD_BREAKS:
 					return "Breaks";
+				case PKG_SECTION_FIELD_CONFLICTS:
+					return "Conflicts";
 				case PKG_SECTION_FIELD_REPLACES:
 					return "Replaces";
 				case PKG_SECTION_FIELD_MAINTAINER:
@@ -1233,6 +1236,54 @@ int pkg_parse_section(
 			}
 			
 			strcpy(pkg->breaks, value);
+		}
+	}
+	
+	/* Conflicts (merged into the breaks list, as both relations are mutually exclusive) */
+	
+	if (repo->type == REPO_TYPE_APT) {
+		key = pkg_get_field_name(repo->type, PKG_SECTION_FIELD_CONFLICTS);
+		value = query_get_string(query, key);
+		
+		if (value != NULL) {
+			if (pkg->breaks == NULL) {
+				pkg->breaks = malloc(strlen(value) + 1);
+				
+				if (pkg->breaks == NULL) {
+					err = APTERR_MEM_ALLOC_FAILURE;
+					goto end;
+				}
+				
+				strcpy(pkg->breaks, value);
+			} else {
+				size = strlen(pkg->breaks) + strlen(", ") + strlen(value) + 1;
+				
+				ptr = realloc(pkg->breaks, size);
+				
+				if (ptr == NULL) {
+					err = APTERR_MEM_ALLOC_FAILURE;
+					goto end;
+				}
+				
+				pkg->breaks = ptr;
+				
+				strcat(pkg->breaks, ", ");
+				strcat(pkg->breaks, value);
+			}
+		}
+	}
+	
+	/*
+	Keep an unresolved copy of the breaks/conflicts list, as the original gets
+	resolved later on, which drops the version constraints of every relation.
+	*/
+	
+	if (pkg->breaks != NULL) {
+		pkg->conflicts = strdup(pkg->breaks);
+		
+		if (pkg->conflicts == NULL) {
+			err = APTERR_MEM_ALLOC_FAILURE;
+			goto end;
 		}
 	}
 	
@@ -3261,6 +3312,576 @@ int pkgs_collect(
 	
 }
 
+static int version_order(const unsigned char ch) {
+	
+	if (isdigit(ch)) {
+		return 0;
+	}
+	
+	if (isalpha(ch)) {
+		return ch;
+	}
+	
+	if (ch == '~') {
+		return -1;
+	}
+	
+	if (ch != '\0') {
+		return (ch + 256);
+	}
+	
+	return 0;
+	
+}
+
+static int version_compare_part(
+	const char* a,
+	const char* b
+) {
+	/*
+	Compares two version components using the rules of the Debian versioning scheme.
+	*/
+	
+	int first = 0;
+	
+	while (*a != '\0' || *b != '\0') {
+		first = 0;
+		
+		while ((*a != '\0' && !isdigit(*a)) || (*b != '\0' && !isdigit(*b))) {
+			const int ac = version_order(*a);
+			const int bc = version_order(*b);
+			
+			if (ac != bc) {
+				return ((ac > bc) - (ac < bc));
+			}
+			
+			a++;
+			b++;
+		}
+		
+		while (*a == '0') {
+			a++;
+		}
+		
+		while (*b == '0') {
+			b++;
+		}
+		
+		while (isdigit(*a) && isdigit(*b)) {
+			if (first == 0) {
+				first = (*a - *b);
+			}
+			
+			a++;
+			b++;
+		}
+		
+		if (isdigit(*a)) {
+			return 1;
+		}
+		
+		if (isdigit(*b)) {
+			return -1;
+		}
+		
+		if (first != 0) {
+			return ((first > 0) - (first < 0));
+		}
+	}
+	
+	return 0;
+	
+}
+
+static int version_compare(
+	const char* a,
+	const char* b
+) {
+	/*
+	Compares two version strings using the rules of the Debian versioning
+	scheme (i.e. '[epoch:]upstream[-revision]').
+	*/
+	
+	const char* arevision = NULL;
+	const char* brevision = NULL;
+	
+	const char* aupstream = a;
+	const char* bupstream = b;
+	
+	char* aepoch = NULL;
+	char* bepoch = NULL;
+	
+	char abuffer[4096];
+	char bbuffer[4096];
+	
+	biguint_t aepoch_value = 0;
+	biguint_t bepoch_value = 0;
+	
+	size_t asize = 0;
+	size_t bsize = 0;
+	
+	int result = 0;
+	
+	/* Epoch */
+	
+	aepoch = strchr(a, ':');
+	bepoch = strchr(b, ':');
+	
+	if (aepoch != NULL) {
+		aepoch_value = strtoull(a, NULL, 10);
+		aupstream = (aepoch + 1);
+	}
+	
+	if (bepoch != NULL) {
+		bepoch_value = strtoull(b, NULL, 10);
+		bupstream = (bepoch + 1);
+	}
+	
+	if (aepoch_value != bepoch_value) {
+		return ((aepoch_value > bepoch_value) - (aepoch_value < bepoch_value));
+	}
+	
+	/* Upstream */
+	
+	arevision = strrchr(aupstream, '-');
+	brevision = strrchr(bupstream, '-');
+	
+	asize = ((arevision != NULL) ? ((size_t) (arevision - aupstream)) : strlen(aupstream));
+	bsize = ((brevision != NULL) ? ((size_t) (brevision - bupstream)) : strlen(bupstream));
+	
+	if (asize > (sizeof(abuffer) - 1)) {
+		asize = (sizeof(abuffer) - 1);
+	}
+	
+	if (bsize > (sizeof(bbuffer) - 1)) {
+		bsize = (sizeof(bbuffer) - 1);
+	}
+	
+	memcpy(abuffer, aupstream, asize);
+	abuffer[asize] = '\0';
+	
+	memcpy(bbuffer, bupstream, bsize);
+	bbuffer[bsize] = '\0';
+	
+	result = version_compare_part(abuffer, bbuffer);
+	
+	if (result != 0) {
+		return result;
+	}
+	
+	/* Revision */
+	
+	return version_compare_part(
+		((arevision != NULL) ? (arevision + 1) : ""),
+		((brevision != NULL) ? (brevision + 1) : "")
+	);
+	
+}
+
+static int version_satisfies(
+	const char* const version,
+	const char* const operator,
+	const char* const constraint
+) {
+	/*
+	Returns whether the version string satisfies a version constraint
+	(e.g. '(<< 1.0)', '(>= 2:1.2-3)').
+	*/
+	
+	const int result = version_compare(version, constraint);
+	
+	if (strcmp(operator, "<<") == 0) {
+		return (result < 0);
+	}
+	
+	if (strcmp(operator, "<=") == 0) {
+		return (result <= 0);
+	}
+	
+	if (strcmp(operator, "=") == 0) {
+		return (result == 0);
+	}
+	
+	if (strcmp(operator, ">=") == 0) {
+		return (result >= 0);
+	}
+	
+	if (strcmp(operator, ">>") == 0) {
+		return (result > 0);
+	}
+	
+	/* Unknown operator; assume the relation does not apply */
+	
+	return 0;
+	
+}
+
+static int conflicts_parse_part(
+	const strsplit_part_t* const part,
+	char* const name,
+	const size_t namesize,
+	char* const operator,
+	char* const version,
+	const size_t versionsize
+) {
+	/*
+	Parses a single 'Breaks'/'Conflicts' entry, which is either a plain package
+	name, or a package name with a version constraint (e.g. 'foo (<< 1.0)').
+	*/
+	
+	const char* begin = part->begin;
+	const char* end = (part->begin + part->size);
+	
+	const char* match = begin;
+	
+	size_t size = 0;
+	
+	name[0] = '\0';
+	operator[0] = '\0';
+	version[0] = '\0';
+	
+	while (match != end) {
+		const unsigned char ch = *match;
+		
+		if (isspace(ch) || ch == '(' || ch == ':' || ch == '[') {
+			break;
+		}
+		
+		match++;
+	}
+	
+	size = (size_t) (match - begin);
+	
+	if (size > (namesize - 1)) {
+		size = (namesize - 1);
+	}
+	
+	if (size > 0) {
+		strncpy(name, begin, size);
+	}
+	
+	name[size] = '\0';
+	
+	/* Optional version constraint */
+	
+	while (match != end && isspace(*match)) {
+		match++;
+	}
+	
+	if (match == end || *match != '(') {
+		return (size > 0);
+	}
+	
+	match++;
+	
+	while (match != end && isspace(*match)) {
+		match++;
+	}
+	
+	begin = match;
+	
+	while (match != end && *match != ')' && !isspace(*match)) {
+		match++;
+	}
+	
+	size = (size_t) (match - begin);
+	
+	if (size > 3) {
+		size = 3;
+	}
+	
+	if (size > 0) {
+		strncpy(operator, begin, size);
+	}
+	
+	operator[size] = '\0';
+	
+	while (match != end && isspace(*match)) {
+		match++;
+	}
+	
+	begin = match;
+	
+	while (match != end && *match != ')') {
+		match++;
+	}
+	
+	size = (size_t) (match - begin);
+	
+	if (size > (versionsize - 1)) {
+		size = (versionsize - 1);
+	}
+	
+	if (size > 0) {
+		strncpy(version, begin, size);
+	}
+	
+	version[size] = '\0';
+	
+	return 1;
+	
+}
+
+static int pkg_breaks_pkg(
+	const pkg_t* const source,
+	const pkg_t* const target,
+	const char* const target_version
+) {
+	/*
+	Returns whether the package 'source' breaks (or conflicts with) the package
+	'target', honoring any version constraint that is declared in the relation.
+	*/
+	
+	int matches = 0;
+	
+	strsplit_t split = {0};
+	strsplit_part_t part = {0};
+	
+	char name[512];
+	char operator[4];
+	char version[1024];
+	
+	if (source->conflicts == NULL) {
+		return 0;
+	}
+	
+	strsplit_init(&split, &part, source->conflicts, ",");
+	
+	while (strsplit_next(&split, &part) != NULL) {
+		if (!conflicts_parse_part(&part, name, sizeof(name), operator, version, sizeof(version))) {
+			continue;
+		}
+		
+		if (strcmp(name, target->name) != 0) {
+			continue;
+		}
+		
+		matches = 1;
+		
+		if (operator[0] != '\0' && target_version != NULL) {
+			/* the relation only applies if the target's version is within the declared range */
+			
+			matches = version_satisfies(target_version, operator, version);
+		}
+		
+		if (matches) {
+			break;
+		}
+	}
+	
+	return matches;
+	
+}
+
+static int repolist_collect_conflicts(
+	repolist_t* const list,
+	const pkgs_t* const indirect,
+	pkgs_t* const conflicts
+) {
+	/*
+	Collects the installed packages that break (or conflict with) any of the packages
+	that are about to be installed, along with the packages that depend on them.
+	*/
+	
+	int err = APTERR_SUCCESS;
+	
+	size_t index = 0;
+	
+	pkg_t* pkg = NULL;
+	pkg_t* subpkg = NULL;
+	
+	const char* value = NULL;
+	
+	strsplit_t split = {0};
+	strsplit_part_t part = {0};
+	
+	char name[512];
+	char operator[4];
+	char version[1024];
+	
+	pkgs_t dependants = {0};
+	
+	pkgs_iter_t iter = {0};
+	pkgs_iter_t subiter = {0};
+	
+	/* an installed package breaks one of the packages that is about to be installed */
+	
+	pkgsiter_init(&iter, &list->installed);
+	
+	while ((pkg = pkgsiter_next(&iter)) != NULL) {
+		if (pkgs_exists(indirect, pkg)) {
+			continue;
+		}
+		
+		pkgsiter_init(&subiter, (pkgs_t*) indirect);
+		
+		while ((subpkg = pkgsiter_next(&subiter)) != NULL) {
+			if (subpkg->installed && !subpkg->upgradable) {
+				continue;
+			}
+			
+			if (!pkg_breaks_pkg(pkg, subpkg, subpkg->version)) {
+				continue;
+			}
+			
+			loggln(
+				LOG_VERBOSE,
+				"Package '%s' conflicts with package '%s', which is about to be installed",
+				pkg->name,
+				subpkg->name
+			);
+			
+			err = repolist_resolve_deps(list, pkg);
+			
+			if (err != APTERR_SUCCESS) {
+				goto end;
+			}
+			
+			err = pkgs_append(conflicts, pkg, 0);
+			
+			if (err != APTERR_SUCCESS) {
+				goto end;
+			}
+			
+			break;
+		}
+	}
+	
+	/* one of the packages that is about to be installed breaks an installed package */
+	
+	pkgsiter_init(&iter, (pkgs_t*) indirect);
+	
+	while ((pkg = pkgsiter_next(&iter)) != NULL) {
+		if (pkg->installed && !pkg->upgradable) {
+			continue;
+		}
+		
+		if (pkg->conflicts == NULL) {
+			continue;
+		}
+		
+		strsplit_init(&split, &part, pkg->conflicts, ",");
+		
+		while (strsplit_next(&split, &part) != NULL) {
+			if (!conflicts_parse_part(&part, name, sizeof(name), operator, version, sizeof(version))) {
+				continue;
+			}
+			
+			subpkg = repolist_get_pkg(list, name);
+			
+			if (subpkg == NULL || subpkg == pkg) {
+				continue;
+			}
+			
+			if (!subpkg->installed) {
+				continue;
+			}
+			
+			if (pkgs_exists(indirect, subpkg)) {
+				continue;
+			}
+			
+			if (pkgs_exists(conflicts, subpkg)) {
+				continue;
+			}
+			
+			/* the installed version is required in order to check the version constraint */
+			
+			err = repolist_resolve_deps(list, subpkg);
+			
+			if (err != APTERR_SUCCESS) {
+				goto end;
+			}
+			
+			value = query_get_string(&subpkg->installation.metadata, "Version");
+			
+			if (value == NULL) {
+				value = subpkg->version;
+			}
+			
+			if (operator[0] != '\0' && !version_satisfies(value, operator, version)) {
+				loggln(
+					LOG_VERBOSE,
+					"Package '%s' (%s) is not affected by the version constraint '%s (%s %s)' declared by package '%s'",
+					subpkg->name,
+					value,
+					name,
+					operator,
+					version,
+					pkg->name
+				);
+				
+				continue;
+			}
+			
+			loggln(
+				LOG_VERBOSE,
+				"Package '%s', which is about to be installed, conflicts with package '%s'",
+				pkg->name,
+				subpkg->name
+			);
+			
+			err = pkgs_append(conflicts, subpkg, 0);
+			
+			if (err != APTERR_SUCCESS) {
+				goto end;
+			}
+		}
+	}
+	
+	/* removing these packages would break their dependants, so they must go as well */
+	
+	for (index = 0; index < conflicts->offset; index++) {
+		pkg = conflicts->items[index];
+		
+		pkgs_free(&dependants, 0);
+		
+		err = repolist_get_dependants(list, pkg, &dependants);
+		
+		if (err != APTERR_SUCCESS) {
+			goto end;
+		}
+		
+		pkgsiter_init(&subiter, &dependants);
+		
+		while ((subpkg = pkgsiter_next(&subiter)) != NULL) {
+			if (pkgs_exists(conflicts, subpkg)) {
+				continue;
+			}
+			
+			if (pkgs_exists(indirect, subpkg)) {
+				continue;
+			}
+			
+			loggln(
+				LOG_VERBOSE,
+				"Package '%s' depends on the conflicting package '%s', so it will be removed as well",
+				subpkg->name,
+				pkg->name
+			);
+			
+			err = repolist_resolve_deps(list, subpkg);
+			
+			if (err != APTERR_SUCCESS) {
+				goto end;
+			}
+			
+			err = pkgs_append(conflicts, subpkg, 0);
+			
+			if (err != APTERR_SUCCESS) {
+				goto end;
+			}
+		}
+	}
+	
+	end:;
+	
+	pkgs_free(&dependants, 0);
+	
+	return err;
+	
+}
+
 int repolist_get_dependants(
 	repolist_t* const list,
 	const pkg_t* const dependency,
@@ -3317,7 +3938,10 @@ int repolist_get_dependants(
 				strsplit_init(&split, &part, pkg->depends, ",");
 				
 				while (pkglist_split_next(&split, &part) != NULL) {
-					matches = strncmp(dependency->name, part.begin, size) == 0;
+					matches = (
+						part.size == (size - 1) &&
+						strncmp(dependency->name, part.begin, part.size) == 0
+					);
 					
 					if (matches) {
 						break;
@@ -3423,6 +4047,8 @@ int repolist_remove_package(
 	
 	biguint_t freed_disk_space = 0;
 	
+	size_t index = 0;
+	
 	pkgs_iter_t iter = {0};
 	pkgs_iter_t subiter = {0};
 	
@@ -3449,12 +4075,13 @@ int repolist_remove_package(
 	
 	pkgs_free(&indirect, 0);
 	
-	pkgsiter_init(&iter, &direct);
-	
-	while ((pkg = pkgsiter_next(&iter)) != NULL) {
+	for (index = 0; index < direct.offset; index++) {
+		pkg = direct.items[index];
+		
 		if (!pkg->installed) {
 			loggln(LOG_WARN, "Package '%s' is not installed; ignoring", pkg->name);
 			pkgs_delete(&direct, pkg);
+			index--;
 			
 			continue;
 		}
@@ -3499,21 +4126,28 @@ int repolist_remove_package(
 		
 		pkg->removable = 1;
 		
-		if (dependants.offset < 1) {
-			continue;
+		/*
+		Manually-installed packages were explicitly requested by the user at
+		some point, so they must be kept, unless they are explicitly removed.
+		*/
+		
+		if (!pkgs_exists(&direct, pkg) && pkg->autoinstall == 0) {
+			loggln(LOG_VERBOSE, "Package '%s' was manually installed; keeping it", pkg->name);
+			
+			pkg->removable = 0;
 		}
 		
-		pkg->removable = 1;
-		
-		pkgsiter_init(&subiter, &dependants);
-		
-		while ((subpkg = pkgsiter_next(&subiter)) != NULL) {
-			pkg->removable = !subpkg->installed || pkgs_exists(&indirect, subpkg);
+		if (pkg->removable) {
+			pkgsiter_init(&subiter, &dependants);
 			
-			loggln(LOG_VERBOSE, "Package '%s' (%savailable) depends on '%s'", subpkg->name, (pkg->removable) ? "not ": "", pkg->name);
-			
-			if (!pkg->removable) {
-				break;
+			while ((subpkg = pkgsiter_next(&subiter)) != NULL) {
+				pkg->removable = !subpkg->installed || pkgs_exists(&indirect, subpkg);
+				
+				loggln(LOG_VERBOSE, "Package '%s' (%savailable) depends on '%s'", subpkg->name, (pkg->removable) ? "not ": "", pkg->name);
+				
+				if (!pkg->removable) {
+					break;
+				}
 			}
 		}
 		
@@ -3603,6 +4237,149 @@ int repolist_remove_package(
 	
 }
 
+int repolist_autoremove_package(repolist_t* const list) {
+	/*
+	Removes the automatically-installed packages that are no longer required
+	by any of the packages that will be kept.
+	*/
+	
+	int err = APTERR_SUCCESS;
+	
+	int answer = ASK_ANSWER_YES;
+	int changed = 0;
+	
+	biguint_t freed_disk_space = 0;
+	
+	size_t index = 0;
+	
+	pkg_t* pkg = NULL;
+	pkg_t* subpkg = NULL;
+	
+	pkgs_t candidates = {0};
+	pkgs_t dependants = {0};
+	
+	pkgs_iter_t subiter = {0};
+	
+	options_t* options = NULL;
+	
+	char format[BTOS_MAX_SIZE];
+	
+	options = get_options();
+	
+	/* resolve the installed packages so that their auto-install state is known */
+	
+	for (index = 0; index < list->installed.offset; index++) {
+		pkg = list->installed.items[index];
+		
+		err = repolist_resolve_deps(list, pkg);
+		
+		if (err != APTERR_SUCCESS) {
+			goto end;
+		}
+	}
+	
+	/* collect the packages that were automatically installed as dependencies */
+	
+	for (index = 0; index < list->installed.offset; index++) {
+		pkg = list->installed.items[index];
+		
+		if (pkg->autoinstall != 1) {
+			continue;
+		}
+		
+		err = pkgs_append(&candidates, pkg, 0);
+		
+		if (err != APTERR_SUCCESS) {
+			goto end;
+		}
+	}
+	
+	/* discard the candidates that are still required by a package that is kept */
+	
+	do {
+		changed = 0;
+		
+		for (index = 0; index < candidates.offset; index++) {
+			pkg = candidates.items[index];
+			
+			pkgs_free(&dependants, 0);
+			
+			err = repolist_get_dependants(list, pkg, &dependants);
+			
+			if (err != APTERR_SUCCESS) {
+				goto end;
+			}
+			
+			pkgsiter_init(&subiter, &dependants);
+			
+			while ((subpkg = pkgsiter_next(&subiter)) != NULL) {
+				if (subpkg == pkg) {
+					continue;
+				}
+				
+				if (pkgs_exists(&candidates, subpkg)) {
+					continue;
+				}
+				
+				loggln(
+					LOG_VERBOSE,
+					"Package '%s' is still required by '%s'; keeping it",
+					pkg->name,
+					subpkg->name
+				);
+				
+				pkgs_delete(&candidates, pkg);
+				index--;
+				changed = 1;
+				
+				break;
+			}
+		}
+	} while (changed);
+	
+	if (candidates.offset == 0) {
+		loggln(LOG_STANDARD, "There are no automatically-installed packages that can be removed.");
+		goto end;
+	}
+	
+	loggln(LOG_STANDARD, "The following packages will be REMOVED:");
+	pprint_packages(&candidates);
+	
+	loggln(LOG_STANDARD, "%zu upgraded, %zu newly installed, %zu to remove and %zu not upgraded.", 0, 0, candidates.offset, list->installed.offset - candidates.offset);
+	
+	for (index = 0; index < candidates.offset; index++) {
+		freed_disk_space += candidates.items[index]->installed_size;
+	}
+	
+	btos(freed_disk_space, format);
+	loggln(LOG_STANDARD, "After this operation, %s disk space will be freed.", format);
+	
+	if (!options->assume_yes) {
+		answer = ask();
+	}
+	
+	if (answer != ASK_ANSWER_YES) {
+		err = APTERR_CLI_USER_INTERRUPTED;
+		goto end;
+	}
+	
+	for (index = 0; index < candidates.offset; index++) {
+		err = repolist_remove_single_package(list, candidates.items[index]);
+		
+		if (err != APTERR_SUCCESS) {
+			goto end;
+		}
+	}
+	
+	end:;
+	
+	pkgs_free(&candidates, 0);
+	pkgs_free(&dependants, 0);
+	
+	return err;
+	
+}
+
 int repolist_install_package(
 	repolist_t* const list,
 	char* const* const packages
@@ -3627,6 +4404,7 @@ int repolist_install_package(
 	pkgs_t installs = {0};
 	pkgs_t upgrades = {0};
 	pkgs_t non_upgradable = {0};
+	pkgs_t conflicts = {0};
 	
 	size_t install = 0;
 	size_t upgrade = 0;
@@ -3698,6 +4476,12 @@ int repolist_install_package(
 	
 	upgrade_or_install = (upgrade || install);
 	
+	err = repolist_collect_conflicts(list, &indirect, &conflicts);
+	
+	if (err != APTERR_SUCCESS) {
+		goto end;
+	}
+	
 	pkgsiter_init(&iter, &direct);
 	
 	while ((pkg = pkgsiter_next(&iter)) != NULL) {
@@ -3737,6 +4521,10 @@ int repolist_install_package(
 			continue;
 		}
 		
+		if (pkgs_exists(&conflicts, pkg)) {
+			continue;
+		}
+		
 		err = pkgs_append(&non_upgradable, pkg, 0);
 		
 		if (err != APTERR_SUCCESS) {
@@ -3769,7 +4557,12 @@ int repolist_install_package(
 		pprint_packages(&upgrades);
 	}
 	
-	loggln(LOG_STANDARD, "%zu upgraded, %zu newly installed, %zu to remove and %zu not upgraded.", upgrades.offset, installs.offset, 0, non_upgradable.offset);
+	if (conflicts.offset != 0) {
+		loggln(LOG_STANDARD, "The following packages will be REMOVED due to conflicts:");
+		pprint_packages(&conflicts);
+	}
+	
+	loggln(LOG_STANDARD, "%zu upgraded, %zu newly installed, %zu to remove and %zu not upgraded.", upgrades.offset, installs.offset, conflicts.offset, non_upgradable.offset);
 	
 	if (upgrade_or_install) {
 		btos(download_size, format);
@@ -3790,6 +4583,18 @@ int repolist_install_package(
 	if (answer != ASK_ANSWER_YES) {
 		err = APTERR_CLI_USER_INTERRUPTED;
 		goto end;
+	}
+	
+	/* remove the conflicting packages before installing the new ones */
+	
+	pkgsiter_init(&iter, &conflicts);
+	
+	while ((pkg = pkgsiter_next(&iter)) != NULL) {
+		err = repolist_remove_single_package(list, pkg);
+		
+		if (err != APTERR_SUCCESS) {
+			goto end;
+		}
 	}
 	
 	dlopts.concurrency = options->concurrency;
@@ -3838,6 +4643,7 @@ int repolist_install_package(
 	pkgs_free(&installs, 0);
 	pkgs_free(&upgrades, 0);
 	pkgs_free(&non_upgradable, 0);
+	pkgs_free(&conflicts, 0);
 	
 	downloader_free(&downloader);
 	dlopts_free(&dlopts);

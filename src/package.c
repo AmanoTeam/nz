@@ -221,6 +221,9 @@ void pkg_free(pkg_t* const pkg) {
 	pkg->homepage = NULL;
 	pkg->bugs = NULL;
 	
+	free(pkg->conflicts);
+	pkg->conflicts = NULL;
+	
 	free(pkg->installation.filename);
 	pkg->installation.filename = NULL;
 	
@@ -553,8 +556,13 @@ void pkgs_delete(
 			memmove(destination, source, size);
 		}
 		
-		pkgs->items[pkgs->offset] = NULL;
 		pkgs->offset--;
+		
+		/* the list might be at full capacity, in which case this write would be out-of-bounds */
+		
+		if (pkgs->offset < (pkgs->size / sizeof(*pkgs->items))) {
+			pkgs->items[pkgs->offset] = NULL;
+		}
 		
 		break;
 	}

@@ -43,6 +43,9 @@ static const char KOPT_COPYLIBS[] = "copylibs";
 static const char KOPT_U[] = "u";
 static const char KOPT_UNINSTALL[] = "uninstall";
 
+static const char KOPT_A[] = "a";
+static const char KOPT_AUTOREMOVE[] = "autoremove";
+
 static const char KOPT_R[] = "r";
 static const char KOPT_REMOVE[] = "remove";
 
@@ -85,6 +88,7 @@ static const char KOPT_OUTPUTDIR[] = "outputdir";
 #define ACTION_UNKNOWN (0x00)
 #define ACTION_INSTALL (0x01)
 #define ACTION_UNINSTALL (0x02)
+#define ACTION_AUTOREMOVE (0x16)
 #define ACTION_PARALLELISM (0x03)
 #define ACTION_FORCE_REFRESH (0x04)
 #define ACTION_PREFIX (0x05)
@@ -116,6 +120,15 @@ static int get_action(const arg_t* const arg) {
 	
 	if (status) {
 		return ACTION_UNINSTALL;
+	}
+	
+	status = (
+		strcmp(arg->key, KOPT_A) == 0 ||
+		strcmp(arg->key, KOPT_AUTOREMOVE) == 0
+	);
+	
+	if (status) {
+		return ACTION_AUTOREMOVE;
 	}
 	
 	status = (
@@ -856,6 +869,10 @@ int main(int argc, argv_t* argv[]) {
 				operation = action;
 				break;
 			}
+			case ACTION_AUTOREMOVE: {
+				operation = action;
+				break;
+			}
 			case ACTION_HELP: {
 				printf("%s", PROGRAM_HELP);
 				goto end;
@@ -927,6 +944,10 @@ int main(int argc, argv_t* argv[]) {
 		}
 		case ACTION_UNINSTALL: {
 			err = repolist_remove_package(&list, packages);
+			break;
+		}
+		case ACTION_AUTOREMOVE: {
+			err = repolist_autoremove_package(&list);
 			break;
 		}
 		case ACTION_DESTROY: {

@@ -78,6 +78,12 @@ int repolist_install_single_package(
 	pkg_t* const pkg
 );
 
+int repolist_get_dependants(
+	repolist_t* const list,
+	const pkg_t* const dependency,
+	pkgs_t* const dependants
+);
+
 int repolist_remove_package(
 	repolist_t* const list,
 	char* const* const packages
@@ -86,6 +92,10 @@ int repolist_remove_package(
 int repolist_remove_single_package(
 	repolist_t* const list,
 	pkg_t* const pkg
+);
+
+int repolist_autoremove_package(
+	repolist_t* const list
 );
 
 int repolist_destroy(repolist_t* const list);
