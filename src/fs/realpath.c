@@ -27,6 +27,7 @@ char* expand_filename(const char* const filename) {
 	char* expanded_filename = NULL;
 	
 	#if defined(_WIN32)
+		HANDLE handle = 0;
 		DWORD size = 0;
 		
 		#if defined(_UNICODE)
@@ -60,12 +61,28 @@ char* expand_filename(const char* const filename) {
 				goto end;
 			}
 			
-			size = GetFullPathNameW(wfilename, 0, NULL, NULL);
+			handle = CreateFileW(
+				wfilename,
+				0,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				NULL,
+				OPEN_EXISTING,
+				FILE_FLAG_BACKUP_SEMANTICS,
+				NULL
+			);
+			
+			if (handle == INVALID_HANDLE_VALUE) {
+				size = GetFullPathNameW(wfilename, 0, NULL, NULL);
+			} else {
+				size = GetFinalPathNameByHandleW(handle, NULL, 0, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+			}
 			
 			if (size == 0) {
 				err = -1;
 				goto end;
 			}
+			
+			size++;
 			
 			wexpanded_filename = malloc(((size_t) size) * sizeof(*wexpanded_filename));
 			
@@ -74,9 +91,11 @@ char* expand_filename(const char* const filename) {
 				goto end;
 			}
 			
-			size = GetFullPathNameW(wfilename, size, wexpanded_filename, NULL);
-			
-			free(wfilename);
+			if (handle == INVALID_HANDLE_VALUE) {
+				size = GetFullPathNameW(wfilename, size, wexpanded_filename, NULL);
+			} else {
+				size = GetFinalPathNameByHandleW(handle, wexpanded_filename, size, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+			}
 			
 			if (size == 0) {
 				err = -1;
@@ -102,12 +121,28 @@ char* expand_filename(const char* const filename) {
 				goto end;
 			}
 		#else
-			size = GetFullPathNameA(filename, 0, NULL, NULL);
+			handle = CreateFileA(
+				filename,
+				0,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				NULL,
+				OPEN_EXISTING,
+				FILE_FLAG_BACKUP_SEMANTICS,
+				NULL
+			);
+			
+			if (handle == INVALID_HANDLE_VALUE) {
+				size = GetFullPathNameA(filename, 0, NULL, NULL);
+			} else {
+				size = GetFinalPathNameByHandleA(handle, NULL, 0, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+			}
 			
 			if (size == 0) {
 				err = -1;
 				goto end;
 			}
+			
+			size++;
 			
 			expanded_filename = malloc((size_t) size);
 			
@@ -116,13 +151,23 @@ char* expand_filename(const char* const filename) {
 				goto end;
 			}
 			
-			size = GetFullPathNameA(filename, size, expanded_filename, NULL);
+			if (handle == INVALID_HANDLE_VALUE) {
+				size = GetFullPathNameA(filename, size, expanded_filename, NULL);
+			} else {
+				size = GetFinalPathNameByHandleA(handle, expanded_filename, size, VOLUME_NAME_DOS | FILE_NAME_NORMALIZED);
+			}
 			
 			if (size == 0) {
 				err = -1;
 				goto end;
 			}
 		#endif
+		
+		size = (DWORD) strlen(WIN10_LONG_PATH_PREFIX_S);
+		
+		if (strncmp(expanded_filename, WIN10_LONG_PATH_PREFIX_S, (size_t) size) == 0) {
+			memmove(expanded_filename, expanded_filename + size, strlen(expanded_filename + size) + 1);
+		}
 	#else
 		char* tmp = NULL;
 		
@@ -139,6 +184,8 @@ char* expand_filename(const char* const filename) {
 			err = -1;
 			goto end;
 		}
+		
+		errno = 0;
 		
 		if (realpath(filename, expanded_filename) == NULL && errno != ENOENT) {
 			err = -1;
@@ -200,6 +247,10 @@ char* expand_filename(const char* const filename) {
 	#endif
 	
 	end:;
+	
+	#if defined(_WIN32)
+		CloseHandle(handle);
+	#endif
 	
 	#if defined(_WIN32) && defined(_UNICODE)
 		free(wfilename);
