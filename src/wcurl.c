@@ -168,6 +168,20 @@ int wcurl_init(wcurl_t* const wcurl) {
 			err = WCURL_ERR_SETOPT_FAILURE;
 			goto end;
 		}
+		
+		code = curl_easy_setopt(curl, CURLOPT_DOH_SSL_VERIFYPEER, 0L);
+		
+		if (code != CURLE_OK) {
+			err = WCURL_ERR_SETOPT_FAILURE;
+			goto end;
+		}
+		
+		code = curl_easy_setopt(curl, CURLOPT_DOH_SSL_VERIFYHOST, 0L);
+		
+		if (code != CURLE_OK) {
+			err = WCURL_ERR_SETOPT_FAILURE;
+			goto end;
+		}
 	#else
 		err = sslcerts_load_certificates(curl);
 		
