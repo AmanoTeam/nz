@@ -791,7 +791,7 @@ int query_load_file(
 		goto end;
 	}
 	
-	file_size = fsream_size(stream);
+	file_size = fstream_size(stream);
 	
 	if (file_size < 1 || file_size > QUERY_MAX_SIZE) {
 		err = -1;

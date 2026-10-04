@@ -448,7 +448,7 @@ int fstream_getfd(fstream_t* const stream) {
 	
 }
 
-int64_t fsream_size(fstream_t* const stream) {
+int64_t fstream_size(fstream_t* const stream) {
 	/*
 	Returns the current file size.
 	
@@ -483,7 +483,7 @@ int64_t fsream_size(fstream_t* const stream) {
 	
 }
 
-int fsream_truncate(fstream_t* const stream, const int64_t offset) {
+int fstream_truncate(fstream_t* const stream, const int64_t offset) {
 	/*
 	Truncates the file.
 	
@@ -493,7 +493,7 @@ int fsream_truncate(fstream_t* const stream, const int64_t offset) {
 	char zeros[1024];
 	
 	int status = 0;
-	const int64_t file_size = fsream_size(stream);
+	const int64_t file_size = fstream_size(stream);
 	
 	int64_t diff = 0;
 	size_t write = 0;

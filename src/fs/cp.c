@@ -127,7 +127,7 @@ int copy_file(const char* const source, const char* const destination) {
 		
 		if (copy_file_range != NULL) {
 			int64_t off = 0;
-			int64_t remaining = fsream_size(input);
+			int64_t remaining = fstream_size(input);
 
 			while (remaining > 0) {
 				status = copy_file_range(fstream_getfd(input), &off, fstream_getfd(output), NULL, remaining, 0);

@@ -1416,7 +1416,7 @@ int repo_load_string(
 					goto end;
 				}
 				
-				file_size = fsream_size(stream);
+				file_size = fstream_size(stream);
 				
 				if (file_size == FSTREAM_ERROR) {
 					err = APTERR_FSTREAM_TELL_FAILURE;
@@ -1453,7 +1453,7 @@ int repo_load_string(
 				goto end;
 			}
 			
-			file_size = fsream_size(stream);
+			file_size = fstream_size(stream);
 			
 			if (file_size == FSTREAM_ERROR) {
 				err = APTERR_FSTREAM_TELL_FAILURE;

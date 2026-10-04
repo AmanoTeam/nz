@@ -62,7 +62,7 @@ int elf_load_file(elfutils_t* const data, const char* const name) {
 		goto end;
 	}
 	
-	file_size = fsream_size(stream);
+	file_size = fstream_size(stream);
 	
 	if (file_size == FSTREAM_ERROR) {
 		err = -1;

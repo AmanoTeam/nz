@@ -52,10 +52,10 @@ int fstream_lock(fstream_t* const stream);
 ssize_t fstream_read(fstream_t* const stream, char* const buffer, const size_t size);
 int fstream_write(fstream_t* const stream, const char* const buffer, const size_t size);
 int fstream_seek(fstream_t* const stream, const int64_t offset, const fstream_seek_t method);
-int fsream_truncate(fstream_t* const stream, const int64_t offset);
+int fstream_truncate(fstream_t* const stream, const int64_t offset);
 int64_t fstream_tell(fstream_t* const stream);
 int fstream_getfd(fstream_t* const stream);
-int64_t fsream_size(fstream_t* const stream);
+int64_t fstream_size(fstream_t* const stream);
 int fstream_close(fstream_t* const stream);
 
 #endif

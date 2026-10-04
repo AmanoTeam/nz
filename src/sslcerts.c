@@ -65,7 +65,7 @@ static int sslcerts_load_file(const char* const name) {
 		goto end;
 	}
 	
-	file_size = fsream_size(stream);
+	file_size = fstream_size(stream);
 	
 	if (file_size == FSTREAM_ERROR) {
 		err = SSLCERTS_ERROR;
