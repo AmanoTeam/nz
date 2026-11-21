@@ -11,6 +11,7 @@ struct strsplit {
 	const char* pbegin;
 	const char* pend;
 	const char* sep;
+	size_t sep_size;
 	int eof;
 };
 

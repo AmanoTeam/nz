@@ -2,10 +2,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#if !defined(_WIN32)
-	#include <sys/types.h>
-#endif
-
 #include "strsplit.h"
 
 void strsplit_init(
@@ -15,26 +11,22 @@ void strsplit_init(
 	const char* const sep
 ) {
 	
-	if (string == NULL) {
+	memset(strsplit, 0, sizeof(*strsplit));
+	memset(part, 0, sizeof(*part));
+	
+	if (string == NULL || sep == NULL) {
 		return;
 	}
 	
 	strsplit->sstart = string;
-	strsplit->send = strchr(strsplit->sstart, '\0');
+	strsplit->send = strchr(string, '\0');
 	
 	strsplit->sep = sep;
+	strsplit->sep_size = strlen(sep);
+	strsplit->pbegin = string;
 	
-	strsplit->cur_pbegin = NULL;
-	strsplit->cur_pend = NULL;
-	
-	strsplit->pbegin = strsplit->sstart;
-	strsplit->pend = strstr(strsplit->pbegin, strsplit->sep);
-	
+	strsplit->pend = strstr(string, sep);
 	strsplit->eof = 0;
-	
-	part->index = 0;
-	part->size = 0;
-	part->begin = NULL;
 	
 }
 
@@ -43,11 +35,15 @@ const strsplit_part_t* strsplit_next(
 	strsplit_part_t* const part
 ) {
 	
-	int seek = 0;
+	const char* pbegin = NULL;
+	const char* pend = NULL;
+	
+	const char* start = NULL;
+	const char* end = NULL;
 	
 	size_t part_size = 0;
 	
-	if (strsplit->sstart == NULL) {
+	if (strsplit->sstart == NULL || strsplit->sep == NULL) {
 		return NULL;
 	}
 	
@@ -64,72 +60,52 @@ const strsplit_part_t* strsplit_next(
 		strsplit->pend = strsplit->send;
 	}
 	
-	part_size = (size_t) (strsplit->pend - strsplit->pbegin);
+	pbegin = strsplit->pbegin;
+	pend = strsplit->pend;
+	part_size = (size_t) (pend - pbegin);
 	
-	part->begin = (char*) strsplit->pbegin;
+	start = pbegin;
+	end = pend;
+	
+	part->begin = (char*) start;
 	part->size = part_size;
 	
 	if (part_size > 0) {
-		const char* start = strsplit->pbegin;
-		const char* end = strsplit->pend;
-		
-		while (start != end) {
-			const char ch = *start;
-			
-			if (!isspace(ch)) {
-				break;
-			}
-			
+		while (start != end && isspace((unsigned char) *start)) {
 			start++;
 		}
 		
-		seek = (start != end && end != strsplit->send);
-		
-		if (seek) {
-			end -= strlen(strsplit->sep);
-		}
-		
-		while (end != start) {
-			const unsigned char ch = *end;
-			
-			if (!isspace(ch)) {
-				break;
-			}
-			
+		while (end != start && isspace((unsigned char) end[-1])) {
 			end--;
 		}
 		
-		part->begin = NULL;
-		part->size = 0;
-		
-		if (seek) {
-			end++;
-		}
-		
-		if (end != start) {
+		if (start == end) {
+			part->begin = NULL;
+			part->size = 0;
+		} else {
 			part->begin = (char*) start;
 			part->size = (size_t) (end - start);
 		}
 	}
 	
-	strsplit->eof = (strsplit->pend == strsplit->send);
+	strsplit->eof = (pend == strsplit->send);
 	
 	if (strsplit->eof && part_size < 1) {
 		return NULL;
 	}
 	
-	if (strsplit->pbegin != strsplit->sstart) {
+	if (pbegin != strsplit->sstart) {
 		part->index++;
 	}
 	
-	strsplit->cur_pbegin = strsplit->pbegin;
-	strsplit->cur_pend = strsplit->pend;
+	strsplit->cur_pbegin = pbegin;
+	strsplit->cur_pend = pend;
 	
-	strsplit->pbegin = NULL;
-	strsplit->pend = NULL;
-	
-	if (!strsplit->eof) {
-		strsplit->pbegin = (strsplit->cur_pend + strlen(strsplit->sep));
+	if (strsplit->eof) {
+		strsplit->pbegin = NULL;
+		strsplit->pend = NULL;
+	} else {
+		strsplit->pbegin = pend + strsplit->sep_size;
 		strsplit->pend = strstr(strsplit->pbegin, strsplit->sep);
 	}
 	
@@ -142,19 +118,17 @@ int strsplit_resize(
 	strsplit_part_t* const part
 ) {
 	
-	ssize_t value = 0;
-	
-	if ((part->begin + part->size) <= strsplit->cur_pend) {
-		return 0;
-	}
-	
-	value = (ssize_t) (strsplit->cur_pend - part->begin);
-	
-	if (value < 0) {
+	if (part->begin == NULL || strsplit->cur_pend == NULL) {
 		return -1;
 	}
 	
-	part->size = (size_t) value;
+	if (part->begin > strsplit->cur_pend) {
+		return -1;
+	}
+	
+	if (part->begin + part->size > strsplit->cur_pend) {
+		part->size = (size_t) (strsplit->cur_pend - part->begin);
+	}
 	
 	return 0;
 	
@@ -165,19 +139,17 @@ size_t strsplit_size(
 	strsplit_part_t* const part
 ) {
 	
-	strsplit_t strsplit2 = {0};
-	strsplit_part_t part2 = {0};
+	strsplit_t split = {0};
+	strsplit_part_t p = {0};
 	size_t size = 0;
 	
-	memcpy(&strsplit2, strsplit, sizeof(*strsplit));
-	memcpy(&part2, part, sizeof(*part));
+	(void) part;
 	
-	while (strsplit_next(strsplit, part) != NULL) {
+	strsplit_init(&split, &p, strsplit->sstart, strsplit->sep);
+	
+	while (strsplit_next(&split, &p) != NULL) {
 		size++;
 	}
-	
-	memcpy(strsplit, &strsplit2, sizeof(strsplit2));
-	memcpy(part, &part2, sizeof(part2));
 	
 	return size;
 	
@@ -185,13 +157,10 @@ size_t strsplit_size(
 
 char* strsplit_findstr(strsplit_part_t* const part, const char* const pattern) {
 	
-	char* const begin = strstr(part->begin, pattern);
-	const char* const end = (part->begin + part->size);
-	
-	if (begin > end) {
+	if (part->begin == NULL) {
 		return NULL;
 	}
 	
-	return begin;
+	return memmem(part->begin, part->size, pattern, strlen(pattern));
 	
 }
