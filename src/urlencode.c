@@ -2,10 +2,9 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "hex.h"
 #include "urlencode.h"
 
-static const char QUOTE_SAFE_SYMBOLS[] = "-._~";
+static const char HEX_DIGITS[] = "0123456789ABCDEF";
 
 size_t urlencode(
 	const char* const uri,
@@ -16,10 +15,11 @@ size_t urlencode(
 	size_t offset = 0;
 	size_t size = 0;
 	
-	for (index = 0; index < strlen(uri); index++) {
-		const unsigned char ch = uri[index];
+	unsigned char ch = 0;
+	
+	for (index = 0; (ch = (unsigned char) uri[index]) != '\0'; index++) {
 		
-		if (isalnum(ch) || strchr(QUOTE_SAFE_SYMBOLS, ch) != NULL) {
+		if (__builtin_expect(isalnum(ch) || ch == '-' || ch == '.' || ch == '_' || ch == '~', 1)) {
 			if (destination != NULL) {
 				destination[offset++] = ch;
 			}
@@ -36,8 +36,8 @@ size_t urlencode(
 		} else {
 			if (destination != NULL) {
 				destination[offset++] = '%';
-				destination[offset++] = to_hex(ch >> 4);
-				destination[offset++] = to_hex(ch % 16);
+				destination[offset++] = HEX_DIGITS[ch >> 4];
+				destination[offset++] = HEX_DIGITS[ch & 0x0F];
 			}
 			
 			size += 3;

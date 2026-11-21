@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <stdio.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include "query.h"
 #include "biggestint.h"
@@ -74,16 +76,26 @@ hquery_param_t* query_get_param(
 	const char* const key
 ) {
 	
+	int status = 0;
+	
 	size_t index = 0;
+	
+	hquery_param_t* parameter = NULL;
 	
 	if (key == NULL) {
 		return NULL;
 	}
 	
 	for (index = 0; index < query->offset; index++) {
-		hquery_param_t* const parameter = &query->parameters[index];
+		parameter = &query->parameters[index];
 		
-		if (strcmp(parameter->key, key) != 0) {
+		if (query->options & HQUERY_OPT_IGNORE_CASE) {
+			status = strcasecmp(parameter->key, key);
+		} else {
+			status = strcmp(parameter->key, key);
+		}
+		
+		if (status != 0) {
 			continue;
 		}
 		
@@ -134,44 +146,54 @@ static int get_numeric_value(
 	
 	int err = 0;
 	
+	char* end = NULL;
+	
+	bigint_t a = 0;
+	biguint_t b = 0;
+	bigfloat_t c = 0;
+	
 	switch (type) {
 		case HQUERY_INT: {
-			const bigint_t val = strtobi(source, NULL, 10);
+			errno = 0;
+			a = strtobi(source, &end, 10);
 			
-			if (errno == ERANGE) {
+			if (errno == ERANGE || end == source) {
 				err = -1;
 				break;
 			}
 			
-			memcpy(destination, &val, sizeof(val));
+			memcpy(destination, &a, sizeof(a));
 			
 			break;
 		}
 		case HQUERY_UINT: {
-			const biguint_t val = strtobui(source, NULL, 10);
+			errno = 0;
+			b = strtobui(source, &end, 10);
 			
-			if (errno == ERANGE) {
+			if (errno == ERANGE || end == source) {
 				err = -1;
 				break;
 			}
 			
-			memcpy(destination, &val, sizeof(val));
+			memcpy(destination, &b, sizeof(b));
 			
 			break;
 		}
 		case HQUERY_FLOAT: {
-			const bigfloat_t val = strtobf(source, NULL);
+			errno = 0;
+			c = strtobf(source, &end);
 			
-			if (errno == ERANGE) {
+			if (errno == ERANGE || end == source) {
 				err = -1;
 				break;
 			}
 			
-			memcpy(destination, &val, sizeof(val));
+			memcpy(destination, &c, sizeof(c));
 			
 			break;
 		}
 		default:
+			err = -1;
 			break;
 	}
 	
@@ -284,7 +306,7 @@ biguint_t param_get_uint(const hquery_param_t* const param) {
 	const int err = get_numeric_value(HQUERY_UINT, param->value, &value);
 	
 	if (err != 0) {
-		return BIGINT_MAX;
+		return BIGUINT_MAX;
 	}
 	
 	return *(biguint_t*) &value;
@@ -344,56 +366,133 @@ int query_add_string(
 	
 	int err = 0;
 	
-	size_t size = 0;
+	char* replacement = NULL;
 	
 	hquery_param_t* param = NULL;
 	hquery_param_t parameter = {0};
 	
-	param = query_get_param(query, key);
+	if (!(query->options & HQUERY_OPT_DUPLICATES)) {
+		param = query_get_param(query, key);
+		
+		if (param != NULL) {
+			if (strcmp(param->value, value) == 0) {
+				goto end;
+			}
+			
+			replacement = strdup(value);
+			
+			if (replacement == NULL) {
+				err = -1;
+				goto end;
+			}
+			
+			free(param->value);
+			param->value = replacement;
+			replacement = NULL;
+			
+			goto end;
+		}
+	}
 	
-	if (param != NULL) {
-		if (strcmp(param->value, value) == 0) {
-			goto end;
-		}
-		
-		free(param->value);
-		param->value = malloc(strlen(value) + 1);
-		
-		if (param->value == NULL) {
-			err = -1;
-			goto end;
-		}
-		
-		strcpy(param->value, value);
-		
+	parameter.key = strdup(key);
+	
+	if (parameter.key == NULL) {
+		err = -1;
 		goto end;
 	}
 	
-	size = strlen(key);
+	parameter.value = strdup(value);
 	
-	if (size > 0) {
-		parameter.key = strdup(key);
-		
-		if (parameter.key == NULL) {
-			err = -1;
-			goto end;
-		}
-	}
-	
-	size = strlen(value);
-	
-	if (size > 0) {
-		parameter.value = strdup(value);
-		
-		if (parameter.value == NULL) {
-			err = -1;
-			goto end;
-		}
+	if (parameter.value == NULL) {
+		err = -1;
+		goto end;
 	}
 	
 	err = put_parameter(query, &parameter);
 	
 	end:;
+	
+	free(replacement);
+	
+	if (err != 0) {
+		param_free(&parameter);
+	}
+	
+	return err;
+	
+}
+
+int query_add_buffer(
+	hquery_t* const query,
+	const char* const key,
+	const size_t key_size,
+	const char* const value,
+	const size_t value_size
+) {
+	
+	char* a = NULL;
+	char* b = NULL;
+	
+	char* replacement = NULL;
+	
+	hquery_param_t* param = NULL;
+	hquery_param_t parameter = {0};
+	
+	int err = 0;
+	
+	a = malloc(key_size + 1);
+	
+	if (a == NULL) {
+		err = -1;
+		goto end;
+	}
+	
+	memcpy(a, key, key_size);
+	a[key_size] = '\0';
+	
+	b = malloc(value_size + 1);
+	
+	if (b == NULL) {
+		err = -1;
+		goto end;
+	}
+	
+	memcpy(b, value, value_size);
+	b[value_size] = '\0';
+	
+	if (!(query->options & HQUERY_OPT_DUPLICATES)) {
+		param = query_get_param(query, a);
+		
+		if (param != NULL) {
+			if (strcmp(param->value, b) == 0) {
+				goto end;
+			}
+			
+			replacement = b;
+			free(param->value);
+			param->value = replacement;
+			replacement = NULL;
+			
+			b = NULL;
+			
+			goto end;
+		}
+	}
+	
+	parameter.key = a;
+	parameter.value = b;
+	
+	a = NULL;
+	b = NULL;
+	
+	err = put_parameter(query, &parameter);
+	
+	end:;
+	
+	free(replacement);
+	
+	free(a);
+	free(b);
 	
 	if (err != 0) {
 		param_free(&parameter);
@@ -411,32 +510,88 @@ static int query_add_numeric(
 ) {
 	
 	int err = 0;
-	
-	char wtmp[32];
 	int wsize = 0;
 	
-	switch (type) {
-		case HQUERY_INT:
-			wsize = snprintf(wtmp, sizeof(wtmp), "%"FORMAT_BIGGEST_INT_T, *(bigint_t*) value);
-			break;
-		case HQUERY_UINT:
-			wsize = snprintf(wtmp, sizeof(wtmp), "%"FORMAT_BIGGEST_UINT_T, *(biguint_t*) value);
-			break;
-		case HQUERY_FLOAT:
-			wsize = snprintf(wtmp, sizeof(wtmp), "%"FORMAT_BIGGEST_FLOAT_T, *(bigfloat_t*) value);
-			break;
-		default:
-			break;
-	}
+	char* wtmp = NULL;
 	
-	if (wsize < 1) {
-		err = -1;
-		goto end;
+	bigint_t a = 0;
+	biguint_t b = 0;
+	bigfloat_t c = 0;
+	
+	switch (type) {
+		case HQUERY_INT: {
+			a = *(const bigint_t*) value;
+			
+			wsize = snprintf(NULL, 0, "%"FORMAT_BIGGEST_INT_T, a);
+			
+			if (wsize < 1) {
+				err = -1;
+				goto end;
+			}
+			
+			wtmp = malloc((size_t) wsize + 1);
+			
+			if (wtmp == NULL) {
+				err = -1;
+				goto end;
+			}
+			
+			snprintf(wtmp, (size_t) wsize + 1, "%"FORMAT_BIGGEST_INT_T, a);
+			
+			break;
+		}
+		case HQUERY_UINT: {
+			b = *(const biguint_t*) value;
+			
+			wsize = snprintf(NULL, 0, "%"FORMAT_BIGGEST_UINT_T, b);
+			
+			if (wsize < 1) {
+				err = -1;
+				goto end;
+			}
+			
+			wtmp = malloc((size_t) wsize + 1);
+			
+			if (wtmp == NULL) {
+				err = -1;
+				goto end;
+			}
+			
+			snprintf(wtmp, (size_t) wsize + 1, "%"FORMAT_BIGGEST_UINT_T, b);
+			
+			break;
+		}
+		case HQUERY_FLOAT: {
+			c = *(const bigfloat_t*) value;
+			
+			wsize = snprintf(NULL, 0, "%"FORMAT_BIGGEST_FLOAT_T, c);
+			
+			if (wsize < 1) {
+				err = -1;
+				goto end;
+			}
+			
+			wtmp = malloc((size_t) wsize + 1);
+			
+			if (wtmp == NULL) {
+				err = -1;
+				goto end;
+			}
+			
+			snprintf(wtmp, (size_t) wsize + 1, "%"FORMAT_BIGGEST_FLOAT_T, c);
+			
+			break;
+		}
+		default:
+			err = -1;
+			goto end;
 	}
 	
 	err = query_add_string(query, key, wtmp);
 	
 	end:;
+	
+	free(wtmp);
 	
 	return err;
 	
@@ -480,58 +635,75 @@ size_t query_dump_string(
 	char* const destination
 ) {
 	
-	ssize_t size = 0;
+	size_t size = 1;
+	size_t offset = 0;
 	size_t index = 0;
+	
+	size_t key_size = 0;
+	size_t value_size = 0;
+	
+	const int status = query->options & HQUERY_OPT_URL_ENCODE;
 	
 	const hquery_param_t* parameter = NULL;
 	
-	char* end = destination;
-	
-	char sep[2];
-	
-	sep[0] = query->sep;
-	sep[1] = '\0';
-	
-	if (destination != NULL) {
-		*destination = '\0';
-	}
-	
-	size++;
+	const size_t subsep_size = strlen(query->subsep);
 	
 	for (index = 0; index < query->offset; index++) {
 		parameter = &query->parameters[index];
 		
-		if (index != 0) {
+		if (index != 0 && query->sep != '\0') {
 			if (destination != NULL) {
-				strcat(destination, sep);
+				destination[offset] = query->sep;
 			}
 			
-			size += strlen(sep);
+			offset++;
+			size++;
 		}
 		
 		if (parameter->key != NULL) {
-			if (destination != NULL) {
-				end = strchr(end, '\0');
-				urlencode(parameter->key, end);
+			if (status) {
+				key_size = urlencode(parameter->key, (destination == NULL) ? (destination) : (destination + offset)) - 1;
+			} else {
+				key_size = strlen(parameter->key);
+				
+				if (destination != NULL) {
+					memcpy(destination + offset, parameter->key, key_size);
+				}
 			}
 			
-			size += urlencode(parameter->key, NULL) - 1;
+			offset += key_size;
+			size += key_size;
 		}
 		
 		if (destination != NULL) {
-			strcat(destination, query->subsep);
+			if (subsep_size == 1) {
+				destination[offset] = query->subsep[0];
+			} else {
+				memcpy(destination + offset, query->subsep, subsep_size);
+			}
 		}
 		
-		size += strlen(query->subsep);
+		offset += subsep_size;
+		size += subsep_size;
 		
 		if (parameter->value != NULL) {
-			if (destination != NULL) {
-				end = strchr(end, '\0');
-				urlencode(parameter->value, end);
+			if (status) {
+				value_size = urlencode(parameter->value, (destination == NULL) ? (destination) : (destination + offset)) - 1;
+			} else {
+				value_size = strlen(parameter->value);
+				
+				if (destination != NULL) {
+					memcpy(destination + offset, parameter->value, value_size);
+				}
 			}
 			
-			size += urlencode(parameter->value, NULL) - 1;
+			offset += value_size;
+			size += value_size;
 		}
+	}
+	
+	if (destination != NULL) {
+		destination[offset] = '\0';
 	}
 	
 	return size;
@@ -552,8 +724,10 @@ void query_free(hquery_t* const query) {
 	
 	size_t index = 0;
 	
+	hquery_param_t* parameter = NULL;
+	
 	for (index = 0; index < query->offset; index++) {
-		hquery_param_t* const parameter = &query->parameters[index];
+		parameter = &query->parameters[index];
 		param_free(parameter);
 	}
 	
@@ -561,7 +735,6 @@ void query_free(hquery_t* const query) {
 	query->offset = 0;
 	query->options = 0;
 	
-	free((void*) query->subsep);
 	query->subsep = NULL;
 	
 	free(query->parameters);
@@ -579,13 +752,20 @@ int query_load_string(
 	strsplit_t split = {0};
 	strsplit_part_t part = {0};
 	
-	strsplit_t subsplit = {0};
-	strsplit_part_t subpart = {0};
-	
 	hquery_param_t param = {0};
 	
-	const char* end = NULL;
-	const char* match = NULL;
+	const char* key_begin = NULL;
+	const char* key_end = NULL;
+	
+	const char* value_begin = NULL;
+	const char* value_end = NULL;
+	
+	const char* sub = NULL;
+	
+	size_t key_size = 0;
+	size_t value_size = 0;
+	
+	const size_t subsep_size = strlen(query->subsep);
 	
 	char sep[2];
 	
@@ -599,90 +779,85 @@ int query_load_string(
 			continue;
 		}
 		
-		strsplit_init(&subsplit, &subpart, part.begin, query->subsep);
+		key_begin = part.begin;
+		key_end = part.begin + part.size;
 		
-		/* Parse parameter name */
-		strsplit_next(&subsplit, &subpart);
-		
-		if (subpart.begin == NULL) {
+		if (subsep_size == 0) {
 			continue;
 		}
 		
-		strsplit_resize(&split, &subpart);
+		if (subsep_size == 1) {
+			sub = memchr(part.begin, (unsigned char) query->subsep[0], part.size);
+		} else {
+			sub = memmem(part.begin, part.size, query->subsep, subsep_size);
+		}
 		
-		if (subpart.size == 0) {
+		if (sub == NULL) {
 			continue;
 		}
 		
-		param.key = NULL;
-		param.value = NULL;
+		key_end = sub;
+		value_begin = sub + subsep_size;
+		value_end = part.begin + part.size;
 		
-		param.key = malloc(subpart.size + 1);
+		while (key_begin < key_end && isspace((unsigned char) *key_begin)) {
+			key_begin++;
+		}
+		
+		while (key_end > key_begin && isspace((unsigned char) key_end[-1])) {
+			key_end--;
+		}
+		
+		if (key_begin == key_end) {
+			continue;
+		}
+		
+		while (value_begin < value_end && isspace((unsigned char) *value_begin)) {
+			value_begin++;
+		}
+		
+		while (value_end > value_begin && isspace((unsigned char) value_end[-1])) {
+			value_end--;
+		}
+		
+		key_size = (size_t) (key_end - key_begin);
+		value_size = (size_t) (value_end - value_begin);
+		
+		param.key = malloc(key_size + 1);
 		
 		if (param.key == NULL) {
 			err = -1;
 			break;
 		}
 		
-		memcpy(param.key, subpart.begin, subpart.size);
-		param.key[subpart.size] = '\0';
+		memcpy(param.key, key_begin, key_size);
+		param.key[key_size] = '\0';
 		
-		if (query->options & HQUERY_OPT_URL_DECODE) {
-			urldecode(param.key, param.key);
-		}
-		
-		/* Parse parameter value */
-		strsplit_next(&subsplit, &subpart);
-		
-		if (subpart.begin == NULL) {
-			param_free(&param);
-			continue;
-		}
-		
-		strsplit_resize(&split, &subpart);
-		
-		if (subpart.size == 0) {
-			param_free(&param);
-			continue;
-		}
-		
-		end = subpart.begin + subpart.size;
-		
-		if (strncmp(end, query->subsep, strlen(query->subsep)) == 0) {
-			match = strchr(end, query->sep);
-			
-			if (match == NULL) {
-				match = strchr(end, '\0');
-			}
-			
-			if (match != NULL) {
-				subpart.size += (size_t) (match - end);
-			}
-		}
-		
-		param.value = malloc(subpart.size + 1);
+		param.value = malloc(value_size + 1);
 		
 		if (param.value == NULL) {
+			param_free(&param);
 			err = -1;
 			break;
 		}
 		
-		memcpy(param.value, subpart.begin, subpart.size);
-		param.value[subpart.size] = '\0';
+		memcpy(param.value, value_begin, value_size);
+		param.value[value_size] = '\0';
 		
 		if (query->options & HQUERY_OPT_URL_DECODE) {
+			urldecode(param.key, param.key);
 			urldecode(param.value, param.value);
 		}
 		
 		err = put_parameter(query, &param);
 		
 		if (err != 0) {
+			param_free(&param);
 			break;
 		}
 	}
 	
 	if (err != 0) {
-		param_free(&param);
 		query_free(query);
 	}
 	
@@ -694,52 +869,73 @@ int query_load_environ(hquery_t* const query) {
 	
 	int err = 0;
 	
-	char* string = NULL;
-	const char* item = NULL;
-	
 	size_t index = 0;
-	size_t size = 0;
+	size_t key_size = 0;
 	
-	char sep[2];
+	const char* item = NULL;
+	const char* equal = NULL;
+	
+	char* key = NULL;
+	char* value = NULL;
+	
+	query_init(query, 0, NULL);
 	
 	if (environ == NULL) {
 		err = -1;
 		goto end;
 	}
 	
-	query_init(query, 0, NULL);
+	query->options &= ~(HQUERY_OPT_URL_DECODE|HQUERY_OPT_IGNORE_CASE);
 	
-	sep[0] = query->sep;
-	sep[1] = '\0';
-	
-	while ((item = environ[index++]) != NULL) {
-		size += strlen(item) + strlen(sep);
-	}
-	
-	string = malloc(size + 1);
-	
-	if (string == NULL) {
-		err = -1;
-		goto end;
-	}
-	
-	string[0] = '\0';
-	
-	index = 0;
-	
-	while ((item = environ[index++]) != NULL) {
-		if (string[0] != '\0') {
-			strcat(string, sep);
+	for (index = 0; environ[index] != NULL; index++) {
+		item = environ[index];
+		
+		equal = strchr(item, '=');
+		
+		if (equal == NULL) {
+			continue;
 		}
 		
-		strcat(string, item);
+		key_size = (size_t) (equal - item);
+		
+		key = malloc(key_size + 1);
+		
+		if (key == NULL) {
+			err = -1;
+			goto end;
+		}
+		
+		memcpy(key, item, key_size);
+		key[key_size] = '\0';
+		
+		value = strdup(equal + 1);
+		
+		if (value == NULL) {
+			err = -1;
+			goto end;
+		}
+		
+		err = query_add_string(query, key, value);
+		
+		free(key);
+		key = NULL;
+		
+		free(value);
+		value = NULL;
+		
+		if (err != 0) {
+			goto end;
+		}
 	}
-	
-	err = query_load_string(query, string);
 	
 	end:;
 	
-	free(string);
+	free(key);
+	free(value);
+	
+	if (err != 0) {
+		query_free(query);
+	}
 	
 	return err;
 	
@@ -759,12 +955,10 @@ void query_init(
 		query->sep = AND;
 	}
 	
-	if (subsep != NULL) {
-		query->subsep = strdup(subsep);
-	}
+	query->subsep = EQUAL;
 	
-	if (query->subsep == NULL) {
-		query->subsep = strdup(EQUAL);
+	if (subsep != NULL) {
+		query->subsep = subsep;
 	}
 	
 	query->options |= (HQUERY_OPT_URL_ENCODE|HQUERY_OPT_URL_DECODE);
@@ -807,12 +1001,12 @@ int query_load_file(
 	
 	rsize = fstream_read(stream, buffer, (size_t) file_size);
 	
-	if (rsize == -1) {
+	if (rsize < 0 || rsize != (ssize_t) file_size) {
 		err = -1;
 		goto end;
 	}
 	
-	buffer[(size_t) file_size] = '\0';
+	buffer[(size_t) rsize] = '\0';
 	
 	err = query_load_string(query, buffer);
 	

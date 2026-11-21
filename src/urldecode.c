@@ -2,10 +2,7 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "hex.h"
 #include "urldecode.h"
-
-static const char URI_SAFE_SYMBOLS[] = "!#$%&'()*+,-./:;=?@[]_~";
 
 size_t urldecode(
 	const char* const uri,
@@ -18,36 +15,37 @@ size_t urldecode(
 	unsigned char a = 0;
 	unsigned char b = 0;
 	unsigned char c = 0;
+	unsigned char d = 0;
 	
-	const size_t length = strlen(uri);
-	
-	for (index = 0; index < length; index++) {
-		const unsigned char ch = uri[index];
+	for (index = 0; (a = (unsigned char) uri[index]) != '\0'; index++) {
+		if (a == '%' && uri[index + 1] != '\0' && uri[index + 2] != '\0') {
+			b = (unsigned char) uri[index + 1];
+			c = (unsigned char) uri[index + 2];
+			
+			if (isxdigit(b) && isxdigit(c)) {
+				d = (unsigned char) (
+					(((b & 0x0F) + ((b >> 6) * 9)) << 4) |
+					((c & 0x0F) + ((c >> 6) * 9))
+				);
+				
+				if (d != '\0') {
+					if (destination != NULL) {
+						destination[offset] = d;
+					}
+					
+					offset++;
+					index += 2;
+					
+					continue;
+				}
+			}
+		}
 		
 		if (destination != NULL) {
-			destination[offset] = ch;
+			destination[offset] = a;
 		}
 		
 		offset++;
-		
-		if (ch == '%' && length > (index + 2)) {
-			a = uri[index + 1];
-			b = uri[index + 2];
-			
-			if (!(isxdigit(a) && isxdigit(b))) {
-				continue;
-			}
-			
-			c = ((from_hex(a) << 4) | from_hex(b));
-			
-			if (isalnum(c) || strchr(URI_SAFE_SYMBOLS, c) != NULL) {
-				if (destination != NULL) {
-					destination[offset - 1] = c;
-				}
-				
-				index += 2;
-			}
-		}
 	}
 	
 	if (destination != NULL) {

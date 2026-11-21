@@ -5,6 +5,8 @@
 
 #define HQUERY_OPT_URL_ENCODE (1 << 0)
 #define HQUERY_OPT_URL_DECODE (1 << 1)
+#define HQUERY_OPT_IGNORE_CASE (1 << 2)
+#define HQUERY_OPT_DUPLICATES (1 << 3)
 
 struct hquery_param {
 	char* key;
@@ -25,6 +27,14 @@ struct hquery {
 typedef struct hquery hquery_t;
 
 void query_free(hquery_t* const query);
+
+int query_add_buffer(
+	hquery_t* const query,
+	const char* const key,
+	const size_t key_size,
+	const char* const value,
+	const size_t value_size
+);
 
 int query_add_string(
 	hquery_t* const query,
