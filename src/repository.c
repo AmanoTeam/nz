@@ -2503,18 +2503,6 @@ pkg_t* pkgs_get_virt_pkg(
 			
 			return pkg;
 		}
-		
-		strsplit_init(&split, &part, pkg->replaces, ",");
-		
-		while (pkglist_split_next(&split, &part) != NULL) {
-			matches = (strncmp(name, part.begin, size) == 0 && size == part.size);
-			
-			if (!matches) {
-				continue;
-			}
-			
-			return pkg;
-		}
 	}
 	
 	return NULL;
@@ -2572,9 +2560,22 @@ pkg_t* repolist_get_pkg(
 	*/
 	
 	size_t index = 0;
+	size_t subindex = 0;
 	
 	repo_t* repo = NULL;
 	pkg_t* pkg = NULL;
+	
+	for (index = 0; index < list->offset; index++) {
+		repo = &list->items[index];
+		
+		for (subindex = 0; subindex < repo->pkgs.offset; subindex++) {
+			pkg = repo->pkgs.items[subindex];
+			
+			if (strcmp(pkg->name, name) == 0) {
+				return pkg;
+			}
+		}
+	}
 	
 	for (index = 0; index < list->offset; index++) {
 		repo = &list->items[index];
