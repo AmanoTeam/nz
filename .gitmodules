@@ -4,9 +4,6 @@
 [submodule "submodules/curl"]
 	path = submodules/curl
 	url = https://github.com/curl/curl
-[submodule "submodules/bearssl"]
-	path = submodules/bearssl
-	url = https://github.com/AmanoTeam/BearSSL
 [submodule "submodules/nghttp2"]
 	path = submodules/nghttp2
 	url = https://github.com/nghttp2/nghttp2
@@ -25,3 +22,6 @@
 [submodule "submodules/bzip2"]
 	path = submodules/bzip2
 	url = https://gitlab.com/bzip2/bzip2
+[submodule "submodules/wolfssl"]
+	path = submodules/wolfssl
+	url = https://github.com/wolfSSL/wolfssl

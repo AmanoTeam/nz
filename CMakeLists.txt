@@ -48,12 +48,11 @@ set(XZ_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/xz-utils")
 set(ZLIB_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/zlib")
 set(ZSTD_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/zstd")
 set(BZIP2_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/bzip2")
+set(WOLFSSL_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/wolfssl")
 
 set(
 	INCLUDE_DIRECTORIES
 	"${CMAKE_CURRENT_SOURCE_DIR}/src"
-	"${BEARSSL_SOURCE_DIRECTORY}/src"
-	"${BEARSSL_SOURCE_DIRECTORY}/inc"
 	"${CMAKE_CURRENT_BINARY_DIR}/submodules/nghttp2/lib/includes"
 )
 
@@ -123,307 +122,9 @@ set(
 )
 
 set(
-	BEARSSL_SOURCE_FILES
-	"${BEARSSL_SOURCE_DIRECTORY}/src/settings.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/aead/ccm.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/aead/eax.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/aead/gcm.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/ccopy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/dec16be.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/dec16le.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/dec32be.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/dec32le.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/dec64be.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/dec64le.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/enc16be.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/enc16le.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/enc32be.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/enc32le.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/enc64be.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/enc64le.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/pemdec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/codec/pemenc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_all_m15.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_all_m31.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_c25519_i15.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_c25519_i31.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_c25519_m15.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_c25519_m31.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_c25519_m62.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_c25519_m64.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_curve25519.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_default.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_keygen.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_p256_m15.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_p256_m31.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_p256_m62.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_p256_m64.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_prime_i15.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_prime_i31.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_pubkey.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_secp256r1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_secp384r1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ec_secp521r1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_atr.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_default_sign_asn1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_default_sign_raw.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_default_vrfy_asn1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_default_vrfy_raw.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i15_bits.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i15_sign_asn1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i15_sign_raw.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i15_vrfy_asn1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i15_vrfy_raw.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i31_bits.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i31_sign_asn1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i31_sign_raw.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i31_vrfy_asn1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_i31_vrfy_raw.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ec/ecdsa_rta.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/dig_oid.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/dig_size.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/ghash_ctmul.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/ghash_ctmul32.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/ghash_ctmul64.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/ghash_pclmul.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/ghash_pwr8.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/md5.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/md5sha1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/mgf1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/multihash.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/sha1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/sha2big.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/hash/sha2small.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_add.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_bitlen.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_decmod.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_decode.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_decred.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_encode.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_fmont.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_iszero.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_moddiv.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_modpow.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_modpow2.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_montmul.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_mulacc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_muladd.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_ninv15.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_reduce.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_rshift.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_sub.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i15_tmont.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_add.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_bitlen.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_decmod.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_decode.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_decred.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_encode.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_fmont.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_iszero.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_moddiv.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_modpow.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_modpow2.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_montmul.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_mulacc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_muladd.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_ninv31.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_reduce.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_rshift.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_sub.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i31_tmont.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_add.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_bitlen.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_decmod.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_decode.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_decred.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_div32.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_encode.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_fmont.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_iszero.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_modpow.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_montmul.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_mulacc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_muladd.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_ninv32.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_reduce.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_sub.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i32_tmont.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/int/i62_modpow2.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/kdf/hkdf.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/kdf/shake.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/mac/hmac.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/mac/hmac_ct.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rand/aesctr_drbg.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rand/hmac_drbg.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rand/sysrng.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_keygen.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_modulus.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_oaep_decrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_oaep_encrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_pkcs1_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_pkcs1_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_priv.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_privexp.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_pss_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_pss_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_pub.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_default_pubexp.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_keygen.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_modulus.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_oaep_decrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_oaep_encrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_pkcs1_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_pkcs1_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_priv.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_privexp.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_pss_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_pss_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_pub.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i15_pubexp.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_keygen.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_keygen_inner.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_modulus.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_oaep_decrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_oaep_encrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_pkcs1_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_pkcs1_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_priv.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_privexp.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_pss_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_pss_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_pub.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i31_pubexp.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i32_oaep_decrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i32_oaep_encrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i32_pkcs1_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i32_pkcs1_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i32_priv.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i32_pss_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i32_pss_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i32_pub.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i62_keygen.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i62_oaep_decrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i62_oaep_encrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i62_pkcs1_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i62_pkcs1_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i62_priv.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i62_pss_sign.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i62_pss_vrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_i62_pub.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_oaep_pad.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_oaep_unpad.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_pkcs1_sig_pad.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_pkcs1_sig_unpad.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_pss_sig_pad.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_pss_sig_unpad.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/rsa/rsa_ssl_decrypt.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/prf.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/prf_md5sha1.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/prf_sha256.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/prf_sha384.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_ccert_single_ec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_ccert_single_rsa.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_client.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_client_default_rsapub.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_client_full.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_engine.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_engine_default_aescbc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_engine_default_aesccm.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_engine_default_aesgcm.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_engine_default_chapol.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_engine_default_descbc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_engine_default_ec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_engine_default_ecdsa.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_engine_default_rsavrfy.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_hashes.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_hs_client.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_hs_server.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_io.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_keyexport.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_lru.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_rec_cbc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_rec_ccm.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_rec_chapol.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_rec_gcm.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_scert_single_ec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_scert_single_rsa.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server_full_ec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server_full_rsa.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server_mine2c.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server_mine2g.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server_minf2c.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server_minf2g.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server_minr2g.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server_minu2g.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/ssl/ssl_server_minv2g.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_big_cbcdec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_big_cbcenc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_big_ctr.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_big_ctrcbc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_big_dec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_big_enc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_common.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct64.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct64_cbcdec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct64_cbcenc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct64_ctr.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct64_ctrcbc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct64_dec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct64_enc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct_cbcdec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct_cbcenc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct_ctr.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct_ctrcbc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct_dec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_ct_enc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_pwr8.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_pwr8_cbcdec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_pwr8_cbcenc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_pwr8_ctr.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_pwr8_ctrcbc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_small_cbcdec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_small_cbcenc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_small_ctr.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_small_ctrcbc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_small_dec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_small_enc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_x86ni.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_x86ni_cbcdec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_x86ni_cbcenc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_x86ni_ctr.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/aes_x86ni_ctrcbc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/chacha20_ct.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/chacha20_sse2.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/des_ct.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/des_ct_cbcdec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/des_ct_cbcenc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/des_support.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/des_tab.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/des_tab_cbcdec.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/des_tab_cbcenc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/poly1305_ctmul.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/poly1305_ctmul32.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/poly1305_ctmulq.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/symcipher/poly1305_i15.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/asn1enc.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/encode_ec_pk8der.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/encode_ec_rawder.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/encode_rsa_pk8der.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/encode_rsa_rawder.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/skey_decoder.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/x509_decoder.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/x509_knownkey.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/x509_minimal.c"
-	"${BEARSSL_SOURCE_DIRECTORY}/src/x509/x509_minimal_full.c"
-)
-
-set(
 	TARGETS
 	nz
-	bearssl
+	wolfssl
 	libcurl_shared
 	libzstd_shared
 	liblzma
@@ -436,7 +137,7 @@ set(
 
 set(
 	CURL_LIBRARY_DEPENDENCIES
-	bearssl
+	wolfssl
 	nghttp2
 )
 
@@ -453,7 +154,7 @@ set(PICKY_COMPILER OFF)
 set(BUILD_CURL_EXE OFF)
 set(HTTP_ONLY ON)
 set(ENABLE_THREADED_RESOLVER ON)
-set(CURL_USE_BEARSSL ON)
+set(CURL_USE_WOLFSSL ON)
 set(CURL_USE_OPENSSL OFF)
 set(CURL_USE_LIBPSL OFF)
 set(CURL_DISABLE_ALTSVC ON)
@@ -477,10 +178,19 @@ set(ENABLE_CURL_MANUAL OFF)
 set(BUILD_TESTING OFF)
 set(BUILD_EXAMPLES OFF)
 set(CURL_ENABLE_EXPORT_TARGET OFF)
+set(HAVE_WOLFSSL_GET_PEER_CERTIFICATE ON)
+set(HAVE_WOLFSSL_USEALPN ON)
+set(HAVE_WOLFSSL_BIO_NEW ON)
+set(HAVE_WOLFSSL_BIO_SET_SHUTDOWN ON)
 
 if (WIN32 AND NOUZEN_UNICODE)
 	set(ENABLE_UNICODE ON)
 endif()
+
+# wolfssl
+set(WOLFSSL_CURL ON)
+set(WOLFSSL_OPENSSLALL ON)
+set(WOLFSSL_SESSIONCERTS ON)
 
 # nghttp2
 set(ENABLE_LIB_ONLY ON)
@@ -525,12 +235,9 @@ execute_process(
 	COMMAND_ERROR_IS_FATAL ANY
 )
 
-file(READ "${CURL_SOURCE_DIRECTORY}/CMake/FindBearSSL.cmake" FILE_CONTENTS) 
-string(REPLACE "args(BEARSSL" "args(BearSSL" FILE_CONTENTS "${FILE_CONTENTS}") 
-file(WRITE "${CURL_SOURCE_DIRECTORY}/CMake/FindBearSSL.cmake" "${FILE_CONTENTS}") 
-
 file(READ "${CURL_SOURCE_DIRECTORY}/CMakeLists.txt" FILE_CONTENTS) 
-string(REPLACE "DISABLE_FILE ON" "DISABLE_FILE OFF" FILE_CONTENTS "${FILE_CONTENTS}") 
+string(REPLACE "DISABLE_FILE ON" "DISABLE_FILE OFF" FILE_CONTENTS "${FILE_CONTENTS}")
+string(REPLACE "list(APPEND CMAKE_REQUIRED_LIBRARIES ZLIB::ZLIB)" "" FILE_CONTENTS "${FILE_CONTENTS}")
 file(WRITE "${CURL_SOURCE_DIRECTORY}/CMakeLists.txt" "${FILE_CONTENTS}") 
 
 file(READ "${BZIP2_SOURCE_DIRECTORY}/CMakeLists.txt" FILE_CONTENTS) 
@@ -561,8 +268,8 @@ set(
 
 set(NGHTTP2_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}nghttp2${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
 
-set(BEARSSL_INCLUDE_DIR "${BEARSSL_SOURCE_DIRECTORY}/inc" CACHE PATH "")
-set(BEARSSL_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}bearssl${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
+set(WOLFSSL_INCLUDE_DIR "${WOLFSSL_SOURCE_DIRECTORY}" CACHE PATH "" FORCE)
+set(WOLFSSL_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}wolfssl${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
 
 set(BZIP2_INCLUDE_DIR "${BZIP2_SOURCE_DIRECTORY}" CACHE PATH "")
 set(BZIP2_LIBRARIES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}bz2${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
@@ -578,20 +285,6 @@ set(LIBLZMA_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PR
 
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	add_compile_options($<$<CONFIG:Release>:-fipa-pta>)
-endif()
-
-add_library(
-	bearssl
-	SHARED
-	${BEARSSL_SOURCE_FILES}
-)
-
-if (HAIKU)
-	target_compile_definitions(
-		bearssl
-		PRIVATE
-		BR_USE_URANDOM BR_USE_UNIX_TIME
-	)
 endif()
 
 if (ANDROID)
@@ -618,6 +311,12 @@ add_subdirectory(
 	EXCLUDE_FROM_ALL
 )
 
+target_include_directories(
+	libcurl_shared
+	PRIVATE
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/wolfssl"
+)
+
 add_subdirectory(
 	"${XZ_SOURCE_DIRECTORY}"
 	EXCLUDE_FROM_ALL
@@ -630,6 +329,11 @@ add_subdirectory(
 
 add_subdirectory(
 	"${NGHTTP2_SOURCE_DIRECTORY}"
+	EXCLUDE_FROM_ALL
+)
+
+add_subdirectory(
+	"${WOLFSSL_SOURCE_DIRECTORY}"
 	EXCLUDE_FROM_ALL
 )
 
@@ -700,12 +404,6 @@ foreach(target ${ARCHIVE_LIBRARY_DEPENDENCIES})
 		"ensure_${target}"
 	)
 endforeach()
-
-set_target_properties(
-	libcurl_shared
-	PROPERTIES
-	IMPORTED_LOCATION "${BEARSSL_LIBRARY}"
-)
 
 if (NOUZEN_BUILD_SHARED)
 	add_library(
