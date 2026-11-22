@@ -7,10 +7,12 @@
 
 #include "argparse.h"
 
-static const arg_t* argparse_next(
+static int argparse_next(
 	argparse_t* const parser,
 	arg_t* const argument
 ) {
+	
+	int err = ARGPARSE_ERR_SUCCESS;
 	
 	const char* astart = NULL;
 	const char* aend = NULL;
@@ -28,6 +30,8 @@ static const arg_t* argparse_next(
 	
 	int vonly = 0;
 	
+	int status = 0;
+	
 	#if defined(_WIN32) && defined(_UNICODE)
 		const wchar_t* witem = NULL;
 		int items = 0;
@@ -37,7 +41,8 @@ static const arg_t* argparse_next(
 	argument->value = NULL;
 	
 	if (parser->index >= parser->argc) {
-		return NULL;
+		err = ARGPARSE_ERR_EOF;
+		goto end;
 	}
 	
 	#if defined(_WIN32) && defined(_UNICODE)
@@ -45,18 +50,20 @@ static const arg_t* argparse_next(
 		items = WideCharToMultiByte(CP_UTF8, 0, witem, -1, NULL, 0, NULL, NULL);
 		
 		if (items == 0) {
-			return NULL;
+			err = ARGPARSE_ERR_MEM_ALLOC_FAILURE;
+			goto end;
 		}
 		
 		item = malloc((size_t) items);
 		
 		if (item == NULL) {
-			return NULL;
+			err = ARGPARSE_ERR_MEM_ALLOC_FAILURE;
+			goto end;
 		}
 		
 		if (WideCharToMultiByte(CP_UTF8, 0, witem, -1, item, items, NULL, NULL) == 0) {
-			free(item);
-			return NULL;
+			err = ARGPARSE_ERR_MEM_ALLOC_FAILURE;
+			goto end;
 		}
 	#else
 		item = parser->argv[parser->index++];
@@ -86,11 +93,8 @@ static const arg_t* argparse_next(
 		argument->key = malloc(ksize + 1);
 		
 		if (argument->key == NULL) {
-			#if defined(_WIN32) && defined(_UNICODE)
-				free(item);
-			#endif
-			
-			return NULL;
+			err = ARGPARSE_ERR_MEM_ALLOC_FAILURE;
+			goto end;
 		}
 		
 		memcpy(argument->key, kstart, ksize);
@@ -107,15 +111,14 @@ static const arg_t* argparse_next(
 	
 	vsize = (size_t) (vend - vstart);
 	
-	if (vsize > 0) {
+	status = (vonly ? (vsize > 0) : (kend != aend));
+	
+	if (status) {
 		argument->value = malloc(vsize + 1);
 		
 		if (argument->value == NULL) {
-			#if defined(_WIN32) && defined(_UNICODE)
-				free(item);
-			#endif
-			
-			return NULL;
+			err = ARGPARSE_ERR_MEM_ALLOC_FAILURE;
+			goto end;
 		}
 		
 		memcpy(argument->value, vstart, vsize);
@@ -124,11 +127,21 @@ static const arg_t* argparse_next(
 		argument->type = (vonly) ? ARGTYPE_VALUE_ONLY : ARGTYPE_VALUE;
 	}
 	
+	end:;
+	
+	if (err != ARGPARSE_ERR_SUCCESS && err != ARGPARSE_ERR_EOF) {
+		free(argument->key);
+		argument->key = NULL;
+		
+		free(argument->value);
+		argument->value = NULL;
+	}
+	
 	#if defined(_WIN32) && defined(_UNICODE)
 		free(item);
 	#endif
 	
-	return argument;
+	return err;
 	
 }
 
@@ -161,13 +174,21 @@ int argparse_init(
 		goto end;
 	}
 	
-	while (argparse_next(parser, &argument) != NULL) {
+	while ((err = argparse_next(parser, &argument)) == ARGPARSE_ERR_SUCCESS) {
 		parser->arguments.items[parser->arguments.offset++] = argument;
 		
 		if (argument.key == NULL && argument.value == NULL) {
 			err = ARGPARSE_ERR_ARGUMENT_EMPTY;
 			goto end;
 		}
+	}
+	
+	if (err == ARGPARSE_ERR_EOF) {
+		err = ARGPARSE_ERR_SUCCESS;
+	}
+	
+	if (err != ARGPARSE_ERR_SUCCESS) {
+		goto end;
 	}
 	
 	for (index = 0; index < parser->arguments.offset; index++) {
