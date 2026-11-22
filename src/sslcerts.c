@@ -3,11 +3,10 @@
 
 #include <curl/curl.h>
 
-#include "fs/fstream.h"
+#include "fs/exists.h"
 #include "fs/getexec.h"
 #include "sslcerts.h"
 #include "fs/sep.h"
-#include "errors.h"
 
 static const char* const SSL_CERTIFICATE_LOCATIONS[] = {
 #if defined(__APPLE__)
@@ -46,56 +45,7 @@ static const char BUILTIN_CA_CERT_LOCATION[] =
 	PATHSEP_M
 	"cert.pem";
 
-struct curl_blob* cacerts = NULL;
-
-static int sslcerts_load_file(const char* const name) {
-	
-	fstream_t* stream = NULL;
-	char* buffer = NULL;
-	
-	long int file_size = 0;
-	ssize_t rsize = 0;
-	
-	int err = SSLCERTS_SUCCESS;
-	
-	stream = fstream_open(name, FSTREAM_READ);
-	
-	if (stream == NULL) {
-		err = SSLCERTS_ERROR;
-		goto end;
-	}
-	
-	file_size = fstream_size(stream);
-	
-	if (file_size == FSTREAM_ERROR) {
-		err = SSLCERTS_ERROR;
-		goto end;
-	}
-	
-	buffer = malloc((size_t) file_size);
-	
-	if (buffer == NULL) {
-		err = SSLCERTS_ERROR;
-		goto end;
-	}
-	
-	rsize = fstream_read(stream, buffer, (size_t) file_size);
-	
-	if (rsize == FSTREAM_ERROR) {
-		err = SSLCERTS_ERROR;
-		goto end;
-	}
-	
-	cacerts->data = buffer;
-	cacerts->len = (size_t) rsize;
-	
-	end:;
-	
-	fstream_close(stream);
-	
-	return err;
-	
-}
+static char* cacert = NULL;
 
 int sslcerts_load_certificates(CURL* const curl) {
 	
@@ -117,36 +67,29 @@ int sslcerts_load_certificates(CURL* const curl) {
 		goto end;
 	}
 	
-	if (cacerts != NULL) {
-		code = curl_easy_setopt(curl, CURLOPT_CAINFO_BLOB, cacerts);
-		
-		if (code != CURLE_OK) {
-			err = SSLCERTS_ERROR;
-		}
-		
+	code = curl_easy_setopt(curl, CURLOPT_CAINFO, cacert);
+	
+	if (code != CURLE_OK) {
+		err = SSLCERTS_ERROR;
 		goto end;
 	}
 	
-	cacerts = malloc(sizeof(*cacerts));
-	
-	if (cacerts == NULL) {
-		err = SSLCERTS_ERROR;
-		goto end;
+	if (cacert != NULL) {
+		return err;
 	}
 	
 	for (index = 0; index < sizeof(SSL_CERTIFICATE_LOCATIONS) / sizeof(*SSL_CERTIFICATE_LOCATIONS); index++) {
 		location = SSL_CERTIFICATE_LOCATIONS[index];
 		
-		err = sslcerts_load_file(location);
-		
-		if (err != SSLCERTS_SUCCESS) {
+		if (file_exists(location) != 1) {
 			continue;
 		}
 		
-		code = curl_easy_setopt(curl, CURLOPT_CAINFO_BLOB, cacerts);
+		cacert = strdup(location);
 		
-		if (code != CURLE_OK) {
+		if (cacert == NULL) {
 			err = SSLCERTS_ERROR;
+			goto end;
 		}
 		
 		goto end;
@@ -169,16 +112,16 @@ int sslcerts_load_certificates(CURL* const curl) {
 	strcpy(name, app_directory);
 	strcat(name, BUILTIN_CA_CERT_LOCATION);
 	
-	err = sslcerts_load_file(name);
-	
-	if (err != SSLCERTS_SUCCESS) {
+	if (file_exists(name) != 1) {
+		err = SSLCERTS_ERROR;
 		goto end;
 	}
 	
-	code = curl_easy_setopt(curl, CURLOPT_CAINFO_BLOB, cacerts);
+	cacert = strdup(name);
 	
-	if (code != CURLE_OK) {
+	if (cacert == NULL) {
 		err = SSLCERTS_ERROR;
+		goto end;
 	}
 	
 	end:;
@@ -186,20 +129,17 @@ int sslcerts_load_certificates(CURL* const curl) {
 	free(app_directory);
 	free(name);
 	
+	code = curl_easy_setopt(curl, CURLOPT_CAINFO, cacert);
+	
+	if (code != CURLE_OK) {
+		err = SSLCERTS_ERROR;
+	}
+	
 	return err;
 	
 }
 
 void sslcerts_unload_certificates(void) {
-	
-	if (cacerts == NULL) {
-		return;
-	}
-	
-	free(cacerts->data);
-	cacerts->len = 0;
-	
-	free(cacerts);
-	cacerts = NULL;
-	
+	free(cacert);
+	cacert = NULL;
 }
