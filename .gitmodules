@@ -38,3 +38,6 @@
 [submodule "submodules/brotli"]
 	path = submodules/brotli
 	url = https://github.com/google/brotli
+[submodule "submodules/jemalloc"]
+	path = submodules/jemalloc
+	url = https://github.com/jemalloc/jemalloc.git

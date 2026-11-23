@@ -43,6 +43,7 @@ set(ZSTD_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/zstd")
 set(BZIP2_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/bzip2")
 set(WOLFSSL_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/wolfssl")
 set(CARES_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/c-ares")
+set(JEMALLOC_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/jemalloc")
 
 set(
 	INCLUDE_DIRECTORIES
@@ -109,6 +110,10 @@ set(
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/write_callback.c"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/elfutils/elfutils.c"
 )
+
+if (NOT WIN32 AND NOT NOUZEN_BUILD_SHARED)
+	list(APPEND NOUZEN_SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/strdupshim.c")
+endif()
 
 set(
 	LIBQUERY_JNI_SOURCE_FILES
@@ -211,6 +216,7 @@ endif()
 set(CARES_SHARED OFF)
 set(CARES_STATIC ON)
 set(CARES_STATIC_PIC ON)
+set(CARES_THREADS OFF)
 
 # wolfssl
 set(WOLFSSL_AESECB ON)
@@ -669,6 +675,112 @@ target_link_libraries(
 	pthread
 	dl
 )
+
+if (NOT WIN32)
+	set(JEMALLOC_BUILD_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/jemalloc-build")
+
+	execute_process(
+		COMMAND "${CMAKE_C_COMPILER}" -dumpmachine
+		OUTPUT_VARIABLE JEMALLOC_HOST
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		COMMAND_ERROR_IS_FATAL ANY
+	)
+
+	execute_process(
+		COMMAND cc -dumpmachine
+		OUTPUT_VARIABLE JEMALLOC_BUILD
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		COMMAND_ERROR_IS_FATAL ANY
+	)
+
+	if (CMAKE_SYSTEM_NAME STREQUAL "Android")
+		if (ANDROID_ABI STREQUAL "armeabi-v7a")
+			set(JEMALLOC_HOST "arm-linux-androideabi")
+		elseif (ANDROID_ABI STREQUAL "x86")
+			set(JEMALLOC_HOST "i686-linux-android")
+		elseif (ANDROID_ABI STREQUAL "x86_64")
+			set(JEMALLOC_HOST "x86_64-linux-android")
+		else()
+			set(JEMALLOC_HOST "aarch64-linux-android")
+		endif()
+	endif()
+
+	set(
+		JEMALLOC_CONFIGURE_ENV
+		"CC=${CMAKE_C_COMPILER}"
+		"CFLAGS=${CMAKE_C_FLAGS} -O3 -fpic"
+	)
+
+	file(MAKE_DIRECTORY "${JEMALLOC_BUILD_DIRECTORY}")
+
+	add_custom_command(
+		OUTPUT "${JEMALLOC_SOURCE_DIRECTORY}/configure"
+		COMMAND autoconf
+		WORKING_DIRECTORY "${JEMALLOC_SOURCE_DIRECTORY}"
+		COMMENT "-- Generating jemalloc configure"
+		VERBATIM
+	)
+
+	set(
+		JEMALLOC_CONFIGURE_FLAGS
+		"--host=${JEMALLOC_HOST}"
+		"--build=${JEMALLOC_BUILD}"
+		"--with-jemalloc-prefix="
+		"--enable-static"
+		"--disable-shared"
+	)
+
+	if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+		set(JEMALLOC_CONFIGURE_FLAGS ${JEMALLOC_CONFIGURE_FLAGS} --with-lg-page=14)
+	endif()
+
+	add_custom_command(
+		OUTPUT "${JEMALLOC_BUILD_DIRECTORY}/Makefile"
+		COMMAND "${CMAKE_COMMAND}" -E make_directory
+			"${JEMALLOC_BUILD_DIRECTORY}"
+		COMMAND
+			"${CMAKE_COMMAND}" -E env
+			${JEMALLOC_CONFIGURE_ENV}
+			"${JEMALLOC_SOURCE_DIRECTORY}/configure"
+			${JEMALLOC_CONFIGURE_FLAGS}
+		WORKING_DIRECTORY "${JEMALLOC_BUILD_DIRECTORY}"
+		DEPENDS "${JEMALLOC_SOURCE_DIRECTORY}/configure"
+		COMMENT "-- Configuring jemalloc"
+		VERBATIM
+	)
+
+	set(JEMALLOC_LIBRARY "${JEMALLOC_BUILD_DIRECTORY}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}jemalloc${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
+	add_custom_command(
+		OUTPUT "${JEMALLOC_LIBRARY}"
+		COMMAND make
+		WORKING_DIRECTORY "${JEMALLOC_BUILD_DIRECTORY}"
+		DEPENDS "${JEMALLOC_BUILD_DIRECTORY}/Makefile"
+		COMMENT "-- Building jemalloc"
+		VERBATIM
+	)
+
+	add_custom_target(
+		jemalloc
+		ALL
+		DEPENDS "${JEMALLOC_LIBRARY}"
+	)
+
+	add_dependencies(nz jemalloc)
+
+	target_link_libraries(
+		nz
+		PRIVATE
+		"${JEMALLOC_LIBRARY}"
+	)
+
+	include(CheckFunctionExists)
+	check_function_exists(clock_gettime JEMALLOC_HAVE_CLOCK_GETTIME)
+
+	if (NOT JEMALLOC_HAVE_CLOCK_GETTIME)
+		target_link_libraries(nz PRIVATE rt)
+	endif()
+endif()
 
 install(
 	TARGETS nz
