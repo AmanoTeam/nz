@@ -124,7 +124,7 @@ int wcurl_init(wcurl_t* const wcurl) {
 		goto end;
 	}
 	
-	code = curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1 | CURL_HTTP_VERSION_2_0);
+	code = curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_3);
 	
 	if (code != CURLE_OK) {
 		err = WCURL_ERR_SETOPT_FAILURE;
@@ -132,6 +132,13 @@ int wcurl_init(wcurl_t* const wcurl) {
 	}
 	
 	code = curl_easy_setopt(curl, CURLOPT_COOKIEFILE, "");
+	
+	if (code != CURLE_OK) {
+		err = WCURL_ERR_SETOPT_FAILURE;
+		goto end;
+	}
+	
+	code = curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
 	
 	if (code != CURLE_OK) {
 		err = WCURL_ERR_SETOPT_FAILURE;

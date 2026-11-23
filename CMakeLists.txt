@@ -21,18 +21,8 @@ set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(CMAKE_PLATFORM_NO_VERSIONED_SONAME ON)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
-
-set(EXEC_RPATH "")
-set(LIB_RPATH "")
-
-if (APPLE)
-	set(EXEC_RPATH "@loader_path/../lib")
-	set(LIB_RPATH "@loader_path")
-elseif (UNIX)
-	set(EXEC_RPATH "$ORIGIN/../lib:$ORIGIN")
-	set(LIB_RPATH "$ORIGIN")
-endif()
 
 set(
 	WARNING_OPTIONS
@@ -41,18 +31,23 @@ set(
 )
 
 set(CURL_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/curl")
+set(BROTLI_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/brotli")
 set(BEARSSL_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/bearssl")
 set(NGHTTP2_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/nghttp2")
+set(NGTCP2_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/ngtcp2")
+set(NGHTTP3_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/nghttp3")
 set(LIBARCHIVE_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/libarchive")
 set(XZ_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/xz-utils")
 set(ZLIB_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/zlib")
 set(ZSTD_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/zstd")
 set(BZIP2_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/bzip2")
 set(WOLFSSL_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/wolfssl")
+set(CARES_SOURCE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/submodules/c-ares")
 
 set(
 	INCLUDE_DIRECTORIES
 	"${CMAKE_CURRENT_SOURCE_DIR}/src"
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/wolfssl"
 	"${CMAKE_CURRENT_BINARY_DIR}/submodules/nghttp2/lib/includes"
 )
 
@@ -125,37 +120,58 @@ set(
 	TARGETS
 	nz
 	wolfssl
-	libcurl_shared
-	libzstd_shared
+	libcurl_static
+	libzstd_static
 	liblzma
-	zlib
-	archive
-	nghttp2
-	bz2
+	zlibstatic
+	archive_static
+	nghttp2_static
+	ngtcp2_static
+	ngtcp2_crypto_wolfssl_static
+	nghttp3_static
+	brotlidec
+	c-ares
+	bz2_static
 )
 
 
 set(
 	CURL_LIBRARY_DEPENDENCIES
 	wolfssl
-	nghttp2
+	zlibstatic
+	nghttp2_static
+	ngtcp2_static
+	ngtcp2_crypto_wolfssl_static
+	nghttp3_static
+	libzstd_static
+	brotlidec
+	bz2_static
+	c-ares
 )
 
 set(
 	ARCHIVE_LIBRARY_DEPENDENCIES
-	libzstd_shared
+	libzstd_static
 	liblzma
-	zlib
-	bz2
+	zlibstatic
+	bz2_static
 )
+
+set(BUILD_SHARED_LIBS OFF)
+set(BUILD_STATIC_LIBS ON)
+
+add_compile_definitions(NGHTTP2_STATICLIB NGTCP2_STATICLIB NGHTTP3_STATICLIB)
 
 # curl
 set(PICKY_COMPILER OFF)
 set(BUILD_CURL_EXE OFF)
 set(HTTP_ONLY ON)
-set(ENABLE_THREADED_RESOLVER ON)
+set(ENABLE_THREADED_RESOLVER OFF)
+set(ENABLE_ARES ON)
 set(CURL_USE_WOLFSSL ON)
 set(CURL_USE_OPENSSL OFF)
+set(CURL_BROTLI ON)
+set(CURL_ZSTD ON)
 set(CURL_USE_LIBPSL OFF)
 set(CURL_DISABLE_ALTSVC ON)
 set(CURL_DISABLE_CRYPTO_AUTH ON)
@@ -172,6 +188,8 @@ set(CURL_CA_PATH "none")
 set(CURL_WERROR OFF)
 set(CURL_DISABLE_DOH OFF)
 set(USE_NGHTTP2 ON)
+set(USE_NGTCP2 ON)
+set(USE_ECH ON)
 set(BUILD_LIBCURL_DOCS OFF)
 set(BUILD_MISC_DOCS OFF)
 set(ENABLE_CURL_MANUAL OFF)
@@ -182,22 +200,40 @@ set(HAVE_WOLFSSL_GET_PEER_CERTIFICATE ON)
 set(HAVE_WOLFSSL_USEALPN ON)
 set(HAVE_WOLFSSL_BIO_NEW ON)
 set(HAVE_WOLFSSL_BIO_SET_SHUTDOWN ON)
+set(HAVE_WOLFSSL_CTX_GENERATEECHCONFIG ON)
+set(HAVE_WOLFSSL_SET_QUIC_USE_LEGACY_CODEPOINT ON)
 
 if (WIN32 AND NOUZEN_UNICODE)
 	set(ENABLE_UNICODE ON)
 endif()
 
+# c-ares
+set(CARES_SHARED OFF)
+set(CARES_STATIC ON)
+set(CARES_STATIC_PIC ON)
+
 # wolfssl
+set(WOLFSSL_AESECB ON)
 set(WOLFSSL_CURL ON)
+set(WOLFSSL_HPKE ON)
+set(WOLFSSL_QUIC ON)
+set(WOLFSSL_ECH ON)
 set(WOLFSSL_OPENSSLALL ON)
 set(WOLFSSL_SESSIONCERTS ON)
 
 # nghttp2
 set(ENABLE_LIB_ONLY ON)
+set(ENABLE_SHARED_LIB OFF)
+set(ENABLE_STATIC_LIB ON)
 set(WITH_LIBXML2 OFF)
 set(WITH_JEMALLOC OFF)
 set(ENABLE_FAILMALLOC OFF)
 set(ENABLE_DOC OFF)
+
+# ngtcp2
+set(ENABLE_OPENSSL OFF)
+set(ENABLE_WOLFSSL ON)
+set(ENABLE_STATIC_LIB ON)
 
 # xz-utils
 set(XZ_NLS OFF)
@@ -207,10 +243,15 @@ if (CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
 endif()
 
 # zstd
-set(BUILD_SHARED_LIBS ON)
 set(ZSTD_BUILD_PROGRAMS OFF)
 set(ZSTD_BUILD_TESTS OFF)
-set(ZSTD_BUILD_STATIC OFF)
+set(ZSTD_BUILD_STATIC ON)
+set(ZSTD_BUILD_SHARED OFF)
+
+# zlib
+set(ZLIB_BUILD_TESTING OFF)
+set(ZLIB_BUILD_SHARED OFF)
+set(ZLIB_BUILD_STATIC ON)
 
 # libarchive
 set(ENABLE_TEST OFF)
@@ -221,16 +262,31 @@ set(LIBLZMA_HAS_EASY_ENCODER ON)
 set(LIBLZMA_HAS_LZMA_PRESET ON)
 set(USE_BZIP2_DLL ON)
 set(ENABLE_OPENSSL OFF)
+set(ENABLE_LZ4 OFF)
+set(ENABLE_LIBXML2 OFF)
+set(ENABLE_EXPAT OFF)
+set(ENABLE_ACL OFF)
+set(ENABLE_LIBB2 OFF)
+set(ENABLE_LZO OFF)
+set(ENABLE_PCREPOSIX OFF)
+set(ENABLE_PCRE2POSIX OFF)
 set(LIBMD_FOUND OFF)
 
 # bzip2
-set(ENABLE_LIB_ONLY ON)
-set(ENABLE_SHARED_LIB ON)
-set(ENABLE_STATIC_LIB OFF)
+set(ENABLE_SHARED_LIB OFF)
+set(ENABLE_STATIC_LIB ON)
 set(ENABLE_TESTS OFF)
 
 execute_process(
 	COMMAND git submodule update --init --depth=1
+	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+	COMMAND_ERROR_IS_FATAL ANY
+)
+
+execute_process(
+	COMMAND git submodule update --init --depth=1 --recursive
+		submodules/ngtcp2
+		submodules/nghttp3
 	WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 	COMMAND_ERROR_IS_FATAL ANY
 )
@@ -257,6 +313,33 @@ file(READ "${NGHTTP2_SOURCE_DIRECTORY}/lib/CMakeLists.txt" FILE_CONTENTS)
 string(REPLACE "add_library(nghttp2 ALIAS \${LIB_SELECTED})" "" FILE_CONTENTS "${FILE_CONTENTS}")
 file(WRITE "${NGHTTP2_SOURCE_DIRECTORY}/lib/CMakeLists.txt" "${FILE_CONTENTS}")
 
+file(READ "${NGTCP2_SOURCE_DIRECTORY}/CMakeLists.txt" FILE_CONTENTS)
+string(REPLACE "(check" "(check_v1" FILE_CONTENTS "${FILE_CONTENTS}")
+file(WRITE "${NGTCP2_SOURCE_DIRECTORY}/CMakeLists.txt" "${FILE_CONTENTS}")
+
+file(READ "${NGHTTP3_SOURCE_DIRECTORY}/CMakeLists.txt" FILE_CONTENTS)
+string(REPLACE "(check" "(check_v2" FILE_CONTENTS "${FILE_CONTENTS}")
+file(WRITE "${NGHTTP3_SOURCE_DIRECTORY}/CMakeLists.txt" "${FILE_CONTENTS}")
+
+file(READ "${WOLFSSL_SOURCE_DIRECTORY}/CMakeLists.txt" FILE_CONTENTS)
+string(REPLACE "/config.h" "/wolfssl_config.h" FILE_CONTENTS "${FILE_CONTENTS}")
+file(WRITE "${WOLFSSL_SOURCE_DIRECTORY}/CMakeLists.txt" "${FILE_CONTENTS}")
+
+file(GLOB_RECURSE WOLFSSL_CONFIG_FILES
+	"${WOLFSSL_SOURCE_DIRECTORY}/src/*.c"
+	"${WOLFSSL_SOURCE_DIRECTORY}/wolfcrypt/src/*.c"
+	"${WOLFSSL_SOURCE_DIRECTORY}/wolfssl/*.h"
+)
+
+foreach(file ${WOLFSSL_CONFIG_FILES})
+	file(READ "${file}" FILE_ORIGINAL)
+	string(REPLACE "<config.h>" "<wolfssl_config.h>" FILE_CONTENTS "${FILE_ORIGINAL}")
+	string(REPLACE "\"config.h\"" "\"wolfssl_config.h\"" FILE_CONTENTS "${FILE_CONTENTS}")
+	if (NOT FILE_CONTENTS STREQUAL FILE_ORIGINAL)
+		file(WRITE "${file}" "${FILE_CONTENTS}")
+	endif()
+endforeach()
+
 include_directories(${INCLUDE_DIRECTORIES})
 
 set(
@@ -266,22 +349,54 @@ set(
 	CACHE PATH ""
 )
 
-set(NGHTTP2_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}nghttp2${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
+set(NGHTTP2_LIBRARY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}nghttp2${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE FILEPATH "" FORCE)
 
 set(WOLFSSL_INCLUDE_DIR "${WOLFSSL_SOURCE_DIRECTORY}" CACHE PATH "" FORCE)
-set(WOLFSSL_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}wolfssl${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
+set(WOLFSSL_LIBRARY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}wolfssl${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE FILEPATH "" FORCE)
 
-set(BZIP2_INCLUDE_DIR "${BZIP2_SOURCE_DIRECTORY}" CACHE PATH "")
-set(BZIP2_LIBRARIES "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}bz2${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
+set(BZIP2_INCLUDE_DIR "${BZIP2_SOURCE_DIRECTORY}" CACHE PATH "" FORCE)
+set(BZIP2_LIBRARIES "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}bz2_static${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE FILEPATH "" FORCE)
 
-set(ZLIB_INCLUDE_DIR "${ZLIB_SOURCE_DIRECTORY}" CACHE PATH "")
-set(ZLIB_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}z${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
+set(ZLIB_INCLUDE_DIR "${ZLIB_SOURCE_DIRECTORY}" CACHE PATH "" FORCE)
+set(ZLIB_LIBRARY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}z${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE FILEPATH "" FORCE)
 
-set(ZSTD_INCLUDE_DIR "${ZSTD_SOURCE_DIRECTORY}/lib" CACHE PATH "")
-set(ZSTD_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}zstd${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
+set(BROTLI_INCLUDE_DIR "${BROTLI_SOURCE_DIRECTORY}/c/include" CACHE PATH "" FORCE)
+set(BROTLI_USE_STATIC_LIBS ON)
+set(BROTLICOMMON_LIBRARY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}brotlicommon${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE FILEPATH "" FORCE)
+set(BROTLIDEC_LIBRARY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}brotlidec${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE FILEPATH "" FORCE)
 
-set(LIBLZMA_INCLUDE_DIR "${XZ_SOURCE_DIRECTORY}/src/liblzma/api" CACHE PATH "")
-set(LIBLZMA_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}lzma${CMAKE_SHARED_LIBRARY_SUFFIX}" CACHE FILEPATH "")
+set(ZSTD_INCLUDE_DIR "${ZSTD_SOURCE_DIRECTORY}/lib" CACHE PATH "" FORCE)
+set(ZSTD_LIBRARY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}zstd${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE FILEPATH "" FORCE)
+
+set(LIBLZMA_INCLUDE_DIR "${XZ_SOURCE_DIRECTORY}/src/liblzma/api" CACHE PATH "" FORCE)
+set(LIBLZMA_LIBRARY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}lzma${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE FILEPATH "" FORCE)
+
+set(
+	NGTCP2_INCLUDE_DIR
+	"${NGTCP2_SOURCE_DIRECTORY}/lib/includes"
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/ngtcp2/lib/includes"
+	"${NGTCP2_SOURCE_DIRECTORY}/crypto/includes"
+)
+
+set(NGTCP2_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}ngtcp2${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
+set(NGTCP2_CRYPTO_WOLFSSL_LIBRARY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}ngtcp2_crypto_wolfssl${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
+set(
+	NGHTTP3_INCLUDE_DIR
+	"${NGHTTP3_SOURCE_DIRECTORY}/lib/includes"
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/nghttp3/lib/includes"
+)
+
+set(NGHTTP3_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}nghttp3${CMAKE_STATIC_LIBRARY_SUFFIX}")
+
+set(
+	CARES_INCLUDE_DIR
+	"${CARES_SOURCE_DIRECTORY}/include"
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/c-ares"
+)
+
+set(CARES_LIBRARY "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}cares${CMAKE_STATIC_LIBRARY_SUFFIX}")
 
 if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
 	add_compile_options($<$<CONFIG:Release>:-fipa-pta>)
@@ -290,6 +405,18 @@ endif()
 if (ANDROID)
 	set(HAVE_FSEEKO 0)
 endif()
+
+file(WRITE "${NGTCP2_LIBRARY}" "")
+file(WRITE "${NGTCP2_CRYPTO_WOLFSSL_LIBRARY}" "")
+file(WRITE "${NGHTTP3_LIBRARY}" "")
+
+file(MAKE_DIRECTORY
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/nghttp2/lib/includes"
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/nghttp3/lib/includes"
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/ngtcp2/lib/includes"
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/c-ares"
+	"${CMAKE_CURRENT_BINARY_DIR}/submodules/brotli"
+)
 
 add_subdirectory(
 	"${ZSTD_SOURCE_DIRECTORY}/build/cmake"
@@ -312,7 +439,7 @@ add_subdirectory(
 )
 
 target_include_directories(
-	libcurl_shared
+	libcurl_static
 	PRIVATE
 	"${CMAKE_CURRENT_BINARY_DIR}/submodules/wolfssl"
 )
@@ -333,18 +460,38 @@ add_subdirectory(
 )
 
 add_subdirectory(
+	"${NGTCP2_SOURCE_DIRECTORY}"
+	EXCLUDE_FROM_ALL
+)
+
+add_subdirectory(
+	"${NGHTTP3_SOURCE_DIRECTORY}"
+	EXCLUDE_FROM_ALL
+)
+
+add_subdirectory(
+	"${BROTLI_SOURCE_DIRECTORY}"
+	EXCLUDE_FROM_ALL
+)
+
+add_subdirectory(
+	"${CARES_SOURCE_DIRECTORY}"
+	EXCLUDE_FROM_ALL
+)
+
+add_subdirectory(
 	"${WOLFSSL_SOURCE_DIRECTORY}"
 	EXCLUDE_FROM_ALL
 )
 
 target_compile_definitions(
-	libzstd_shared
+	libzstd_static
 	PRIVATE
 	ZDICT_QSORT=ZDICT_QSORT_MIN
 )
 
 set_target_properties(
-	archive
+	archive_static
 	PROPERTIES
 	C_STANDARD 99
 	C_STANDARD_REQUIRED ON
@@ -367,40 +514,46 @@ endif()
 
 if (NOT WIN32)
 	target_compile_definitions(
-		nghttp2
+		nghttp2_static
 		PRIVATE
 		HAVE_ARPA_INET_H HAVE_NETINET_IN_H
 	)
 endif()
 
+file(REMOVE "${NGTCP2_LIBRARY}" "${NGTCP2_CRYPTO_WOLFSSL_LIBRARY}" "${NGHTTP3_LIBRARY}")
+
 foreach(target ${CURL_LIBRARY_DEPENDENCIES})
-	add_custom_command(
-		OUTPUT ${target}
-		COMMAND ${CMAKE_COMMAND} --build ./ --target ${target}
-	)
-	
-	add_custom_target(
-		"ensure_${target}" ALL DEPENDS ${target}
-	)
+	if (NOT TARGET "ensure_${target}")
+		add_custom_command(
+			OUTPUT ${target}
+			COMMAND ${CMAKE_COMMAND} --build ./ --target ${target}
+		)
+		
+		add_custom_target(
+			"ensure_${target}" ALL DEPENDS ${target}
+		)
+	endif()
 	
 	add_dependencies(
-		libcurl_shared
+		libcurl_static
 		"ensure_${target}"
 	)
 endforeach()
 
 foreach(target ${ARCHIVE_LIBRARY_DEPENDENCIES})
-	add_custom_command(
-		OUTPUT ${target}
-		COMMAND ${CMAKE_COMMAND} --build ./ --target ${target}
-	)
-	
-	add_custom_target(
-		"ensure_${target}" ALL DEPENDS ${target}
-	)
+	if (NOT TARGET "ensure_${target}")
+		add_custom_command(
+			OUTPUT ${target}
+			COMMAND ${CMAKE_COMMAND} --build ./ --target ${target}
+		)
+		
+		add_custom_target(
+			"ensure_${target}" ALL DEPENDS ${target}
+		)
+	endif()
 	
 	add_dependencies(
-		archive
+		archive_static
 		"ensure_${target}"
 	)
 endforeach()
@@ -419,8 +572,6 @@ if (NOUZEN_BUILD_SHARED)
 	)
 
 	target_link_libraries(nz-jni PRIVATE nz)
-
-	set_target_properties(nz-jni PROPERTIES BUILD_RPATH "$ORIGIN")
 
 	if (NOUZEN_ASAN)
 		target_compile_options(nz-jni PRIVATE -fsanitize=address)
@@ -472,20 +623,6 @@ if (NOT NOUZEN_SSL_VERIFY)
 	)
 endif()
 
-set_target_properties(
-	nz
-	PROPERTIES
-	BUILD_RPATH "${EXEC_RPATH}"
-	INSTALL_RPATH "${EXEC_RPATH}"
-)
-
-set_target_properties(
-	libcurl_shared archive
-	PROPERTIES
-	BUILD_RPATH "${LIB_RPATH}"
-	INSTALL_RPATH "${LIB_RPATH}"
-)
-
 # Enable Unicode on Windows builds
 if (WIN32 AND NOUZEN_UNICODE)
 	target_sources(
@@ -526,14 +663,16 @@ endif()
 target_link_libraries(
 	nz
 	PRIVATE
-	libcurl_shared
-	archive
+	libcurl_static
+	archive_static
+	m
+	pthread
+	dl
 )
 
 install(
-	TARGETS ${TARGETS}
+	TARGETS nz
 	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib NAMELINK_SKIP
 )
 
 install(

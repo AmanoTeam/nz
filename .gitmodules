@@ -25,3 +25,16 @@
 [submodule "submodules/wolfssl"]
 	path = submodules/wolfssl
 	url = https://github.com/wolfSSL/wolfssl
+[submodule "submodules/ngtcp2"]
+	path = submodules/ngtcp2
+	url = https://github.com/ngtcp2/ngtcp2
+[submodule "submodules/nghttp3"]
+	path = submodules/nghttp3
+	url = https://github.com/ngtcp2/nghttp3
+[submodule "submodules/c-ares"]
+	path = submodules/c-ares
+	url = https://github.com/c-ares/c-ares
+
+[submodule "submodules/brotli"]
+	path = submodules/brotli
+	url = https://github.com/google/brotli
