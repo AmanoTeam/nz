@@ -1,73 +1,69 @@
 #include <stdlib.h>
 #include <string.h>
 
-static char* replace_string(const char* const pattern, const char* const replacement, const char* const string) {
+char* strsub(const char* pattern, const char* replacement, const char* string) {
 	
+	const char* cursor = NULL;
 	const char* match = NULL;
+	
 	char* value = NULL;
+	char* output = NULL;
 	
+	size_t plen = 0;
+	size_t rlen = 0;
+	size_t slen = 0;
+	size_t count = 0;
+	size_t prefix = 0;
 	size_t size = 0;
-	size_t plen = strlen(pattern);
 	
-	if (*pattern == '\0') {
-		return NULL;
-	}
+	plen = strlen(pattern);
+	rlen = strlen(replacement);
 	
-	if (strcmp(pattern, replacement) == 0) {
-		return NULL;
-	}
-	
-	match = strstr(string, pattern);
-	
-	if (match == NULL) {
+	if (plen == 0) {
 		return strdup(string);
 	}
 	
-	size = (strlen(string) + strlen(replacement) + 1) - plen;
+	if (strcmp(pattern, replacement) == 0) {
+		return strdup(string);
+	}
 	
+	slen = strlen(string);
+	
+	cursor = string;
+	
+	while ((match = strstr(cursor, pattern)) != NULL) {
+		count++;
+		cursor = match + plen;
+	}
+	
+	if (count == 0) {
+		return strdup(string);
+	}
+	
+	size = (slen - (count * plen)) + (count * rlen) + 1;
 	value = malloc(size);
 	
 	if (value == NULL) {
 		return NULL;
 	}
 	
-	size = (size_t) (match - string);
+	cursor = string;
+	output = value;
 	
-	memcpy(value, string, size);
-	value[size] = '\0';
+	while ((match = strstr(cursor, pattern)) != NULL) {
+		prefix = (size_t) (match - cursor);
+		
+		memcpy(output, cursor, prefix);
+		output += prefix;
+		
+		memcpy(output, replacement, rlen);
+		output += rlen;
+		
+		cursor = match + plen;
+	}
 	
-	strcat(value, replacement);
-	
-	size += plen;
-	strcat(value, string + size);
+	memcpy(output, cursor, strlen(cursor) + 1);
 	
 	return value;
-	
-}
-
-char* strsub(const char* pattern, const char* replacement, const char* string) {
-
-	char* cur = NULL;
-	char* next = NULL;
-	
-	cur = strdup(string);
-	
-	if (cur == NULL) {
-		return NULL;
-	}
-
-	while (strstr(cur, pattern) != NULL) {
-		next = replace_string(pattern, replacement, cur);
-		
-		free(cur);
-
-		if (next == NULL) {
-			return NULL;
-		}
-
-		cur = next;
-	}
-
-	return cur;
 	
 }

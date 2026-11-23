@@ -264,9 +264,7 @@ void archive_entries_free(archive_entries_t* const entries) {
 	}
 	
 	free(entries->items);
-	entries->items = NULL;
 	
-	entries->size = 0;
-	entries->offset = 0;
+	memset(entries, 0, sizeof(*entries));
 	
 }

@@ -12,9 +12,9 @@
 
 void uri_free(base_uri_t* const base) {
 	
-	base->type = BASE_URI_TYPE_TEXT;
 	free(base->value);
-	base->value = NULL;
+	
+	memset(base, 0, sizeof(*base));
 	
 }
 

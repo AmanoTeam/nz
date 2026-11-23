@@ -322,13 +322,8 @@ options_t* get_options(void) {
 void options_free(void) {
 	
 	free(options.prefix);
-	options.prefix = NULL;
-	
 	free(options.symlink_prefix);
-	options.symlink_prefix = NULL;
 	
-	options.force_refresh = 0;
-	options.cache = 0;
-	options.concurrency = 0;
+	memset(&options, 0, sizeof(options));
 	
 }

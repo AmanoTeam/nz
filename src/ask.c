@@ -1,5 +1,9 @@
 #include <stdio.h>
 
+#if defined(_WIN32) && defined(_UNICODE)
+	#include "wio.h"
+#endif
+
 #include "term/keyboard.h"
 #include "ask.h"
 

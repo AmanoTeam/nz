@@ -237,16 +237,16 @@ void wcurlerr_free(wcurl_error_t* const err) {
 	}
 	
 	free(err->msg);
-	err->msg = NULL;
 	
-	err->code = CURLE_OK;
+	memset(err, 0, sizeof(*err));
 	
 }
 
 void wcurl_free(wcurl_t* const wcurl) {
 	
 	curl_easy_cleanup(wcurl->curl);
-	wcurl->curl = NULL;
+	
+	memset(wcurl, 0, sizeof(*wcurl));
 	
 }
 
@@ -447,10 +447,9 @@ int wcurlmlt_init(
 void wcurlmlt_free(wcurl_multi_t* const wcurl_multi) {
 	
 	curl_multi_cleanup(wcurl_multi->curl_multi);
-	wcurl_multi->curl_multi = NULL;
-	
 	curl_share_cleanup(wcurl_multi->curl_share);
-	wcurl_multi->curl_share = NULL;
+	
+	memset(wcurl_multi, 0, sizeof(*wcurl_multi));
 	
 }
 

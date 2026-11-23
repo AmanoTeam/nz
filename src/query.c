@@ -713,10 +713,9 @@ size_t query_dump_string(
 void param_free(hquery_param_t* const parameter) {
 	
 	free(parameter->key);
-	parameter->key = NULL;
-	
 	free(parameter->value);
-	parameter->value = NULL;
+	
+	memset(parameter, 0, sizeof(*parameter));
 	
 }
 
@@ -731,14 +730,9 @@ void query_free(hquery_t* const query) {
 		param_free(parameter);
 	}
 	
-	query->size = 0;
-	query->offset = 0;
-	query->options = 0;
-	
-	query->subsep = NULL;
-	
 	free(query->parameters);
-	query->parameters = NULL;
+	
+	memset(query, 0, sizeof(*query));
 	
 }
 

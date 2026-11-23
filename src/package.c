@@ -184,16 +184,9 @@ static const size_t PACMAN_SECTION_KEYS_SIZE[] = {
 
 void pkg_free(pkg_t* const pkg) {
 	
-	pkg->index = 0;
-	
 	free(pkg->name);
-	pkg->name = NULL;
-	
 	free(pkg->version);
-	pkg->version = NULL;
-	
 	free(pkg->description);
-	pkg->description = NULL;
 	
 	if (pkg->resolved) {
 		pkgs_free(pkg->depends, 0);
@@ -213,35 +206,13 @@ void pkg_free(pkg_t* const pkg) {
 	free(pkg->bugs);
 	free(pkg->maintainer);
 	
-	pkg->depends = NULL;
-	pkg->breaks = NULL;
-	pkg->recommends = NULL;
-	pkg->suggests = NULL;
-	pkg->replaces = NULL;
-	pkg->homepage = NULL;
-	pkg->bugs = NULL;
-	
 	free(pkg->installation.filename);
-	pkg->installation.filename = NULL;
-	
 	query_free(&pkg->installation.metadata);
 	
 	free(pkg->provides);
-	pkg->provides = NULL;
-	
-	pkg->size = 0;
-	pkg->installed_size = 0;
-	
 	free(pkg->filename);
-	pkg->filename = NULL;
 	
-	pkg->obsolete = 0;
-	pkg->resolved = 0;
-	pkg->installed = 0;
-	pkg->upgradable = 0;
-	pkg->removable = 0;
-	pkg->autoinstall = 0;
-	pkg->repo = 0;
+	memset(pkg, 0, sizeof(*pkg));
 	
 	free(pkg);
 	
@@ -266,10 +237,8 @@ void pkgs_free(
 	}
 	
 	free(pkgs->items);
-	pkgs->items = NULL;
 	
-	pkgs->size = 0;
-	pkgs->offset = 0;
+	memset(pkgs, 0, sizeof(*pkgs));
 	
 }
 
@@ -337,8 +306,7 @@ void maintainer_free(maintainer_t* const maintainer) {
 	free(maintainer->name);
 	free(maintainer->email);
 	
-	maintainer->name = NULL;
-	maintainer->email = NULL;
+	memset(maintainer, 0, sizeof(*maintainer));
 	
 }
 
@@ -353,10 +321,8 @@ void maintainers_free(maintainers_t* const maintainers) {
 	}
 	
 	free(maintainers->items);
-	maintainers->items = NULL;
 	
-	maintainers->size = 0;
-	maintainers->offset = 0;
+	memset(maintainers, 0, sizeof(*maintainers));
 	
 }
 

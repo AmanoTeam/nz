@@ -4508,30 +4508,19 @@ int repolist_install_single_package(
 
 void repo_free(repo_t* const repo) {
 	
-	repo->index = 0;
-	
 	free(repo->name);
-	repo->name = NULL;
-	
 	free(repo->resource);
-	repo->resource = NULL;
-	
 	free(repo->release);
-	repo->release = NULL;
-	
 	free(repo->platform);
-	repo->platform = NULL;
-	
 	free(repo->location);
-	repo->location = NULL;
-	
 	free(repo->specification);
-	repo->specification = NULL;
 	
 	pkgs_free(&repo->pkgs, 1);
 	
 	uri_free(&repo->uri);
 	uri_free(&repo->base_uri);
+	
+	memset(repo, 0, sizeof(*repo));
 	
 }
 
@@ -4548,10 +4537,8 @@ void repolist_free(repolist_t* const list) {
 	}
 	
 	free(list->items);
-	list->items = NULL;
 	
-	list->size = 0;
-	list->offset = 0;
+	memset(list, 0, sizeof(*list));
 	
 	options_free();
 	

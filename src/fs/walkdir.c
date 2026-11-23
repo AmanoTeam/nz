@@ -327,25 +327,22 @@ void walkdir_free(walkdir_t* const walkdir) {
 	
 	#if defined(_WIN32)
 		FindClose(walkdir->handle);
-		walkdir->handle = NULL;
 	#endif
 	
 	#if !defined(_WIN32)
 		if (walkdir->dir != NULL) {
 			closedir(walkdir->dir);
-			walkdir->dir = NULL;
 		}
 	#endif
 	
 	free(walkdir->item.name);
 	
-	walkdir->item.index = 0;
-	walkdir->item.name = NULL;
-	walkdir->item.type = WALKDIR_ITEM_UNKNOWN;
-	
 	#if defined(__HAIKU__)
 		free(walkdir->directory);
-		walkdir->directory = NULL;
 	#endif
+	
+	memset(walkdir, 0, sizeof(*walkdir));
+	
+	walkdir->item.type = WALKDIR_ITEM_UNKNOWN;
 	
 }

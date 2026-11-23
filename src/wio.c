@@ -1,5 +1,7 @@
-#include <stdio.h>
+#include <limits.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include <windows.h>
 #include <fcntl.h>
@@ -7,231 +9,119 @@
 
 #include "wio.h"
 
-int wio_printf(const char* const format, ...) {
+#define va_copy(destination, source) __va_copy(destination, source)
+
+int wio_vfprintf(FILE* const stream, const char* const format, va_list list) {
 	
-	int wsize = 0;
+	int length = -1;
+	int wlength = 0;
 	
 	char* value = NULL;
 	wchar_t* wvalue = NULL;
 	
-	va_list list;
-	va_start(list, format);
+	va_list size_list;
+	va_copy(size_list, list);
 	
-	wsize = vsnprintf(NULL, 0, format, list);
+	wlength = vsnprintf(NULL, 0, format, size_list);
 	
-	if (wsize < 0) {
-		wsize = -1;
+	va_end(size_list);
+	
+	if (wlength < 0 || wlength == INT_MAX) {
 		goto end;
 	}
 	
-	value = malloc((size_t) (wsize + 1));
+	length = wlength;
+	
+	value = malloc((size_t) length + 1);
 	
 	if (value == NULL) {
-		wsize = -1;
+		length = -1;
 		goto end;
 	}
 	
-	wsize = vsnprintf(value, (size_t) (wsize + 1), format, list);
-	
-	if (wsize < 0) {
-		wsize = -1;
+	if (vsnprintf(value, (size_t) length + 1, format, list) < 0) {
+		length = -1;
 		goto end;
 	}
 	
-	wsize = MultiByteToWideChar(CP_UTF8, 0, value, -1, NULL, 0);
+	wlength = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value, -1, NULL, 0);
 	
-	if (wsize == 0) {
-		wsize = -1;
+	if (wlength == 0) {
+		length = -1;
 		goto end;
 	}
 	
-	wvalue = malloc(((size_t) wsize) * sizeof(*wvalue));
+	wvalue = malloc(((size_t) wlength) * sizeof(*wvalue));
 	
 	if (wvalue == NULL) {
-		wsize = -1;
+		length = -1;
 		goto end;
 	}
 	
-	if (MultiByteToWideChar(CP_UTF8, 0, value, -1, wvalue, wsize) == 0) {
-		wsize = -1;
+	if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value, -1, wvalue, wlength) == 0) {
+		length = -1;
 		goto end;
 	}
 	
-	wsize = wprintf(L"%ls", wvalue);
+	if (fwprintf(stream, L"%ls", wvalue) < 0) {
+		length = -1;
+	}
 	
 	end:;
 	
 	free(value);
 	free(wvalue);
 	
+	return length;
+	
+}
+
+int wio_printf(const char* const format, ...) {
+	
+	int length = 0;
+	
+	va_list list;
+	va_start(list, format);
+	
+	length = wio_vfprintf(stdout, format, list);
+	
 	va_end(list);
 	
-	return wsize;
+	return length;
 	
 }
 
 int wio_fprintf(FILE* const stream, const char* const format, ...) {
 	
-	int wsize = 0;
-	
-	char* value = NULL;
-	wchar_t* wvalue = NULL;
+	int length = 0;
 	
 	va_list list;
 	va_start(list, format);
 	
-	wsize = vsnprintf(NULL, 0, format, list);
-	
-	if (wsize < 0) {
-		wsize = -1;
-		goto end;
-	}
-	
-	value = malloc((size_t) (wsize + 1));
-	
-	if (value == NULL) {
-		wsize = -1;
-		goto end;
-	}
-	
-	wsize = vsnprintf(value, (size_t) (wsize + 1), format, list);
-	
-	if (wsize < 0) {
-		wsize = -1;
-		goto end;
-	}
-	
-	wsize = MultiByteToWideChar(CP_UTF8, 0, value, -1, NULL, 0);
-	
-	if (wsize == 0) {
-		wsize = -1;
-		goto end;
-	}
-	
-	wvalue = malloc(((size_t) wsize) * sizeof(*wvalue));
-	
-	if (wvalue == NULL) {
-		wsize = -1;
-		goto end;
-	}
-	
-	if (MultiByteToWideChar(CP_UTF8, 0, value, -1, wvalue, wsize) == 0) {
-		wsize = -1;
-		goto end;
-	}
-	
-	wsize = fwprintf(stream, L"%ls", wvalue);
-	
-	end:;
-	
-	free(value);
-	free(wvalue);
+	length = wio_vfprintf(stream, format, list);
 	
 	va_end(list);
 	
-	return wsize;
-	
-}
-
-int wio_vfprintf(FILE* const stream, const char* const format, va_list list) {
-	
-	int wsize = 0;
-	
-	char* value = NULL;
-	wchar_t* wvalue = NULL;
-	
-	wsize = vsnprintf(NULL, 0, format, list);
-	
-	if (wsize < 0) {
-		wsize = -1;
-		goto end;
-	}
-	
-	value = malloc((size_t) (wsize + 1));
-	
-	if (value == NULL) {
-		wsize = -1;
-		goto end;
-	}
-	
-	wsize = vsnprintf(value, (size_t) (wsize + 1), format, list);
-	
-	if (wsize < 0) {
-		wsize = -1;
-		goto end;
-	}
-	
-	wsize = MultiByteToWideChar(CP_UTF8, 0, value, -1, NULL, 0);
-	
-	if (wsize == 0) {
-		wsize = -1;
-		goto end;
-	}
-	
-	wvalue = malloc(((size_t) wsize) * sizeof(*wvalue));
-	
-	if (wvalue == NULL) {
-		wsize = -1;
-		goto end;
-	}
-	
-	if (MultiByteToWideChar(CP_UTF8, 0, value, -1, wvalue, wsize) == 0) {
-		wsize = -1;
-		goto end;
-	}
-	
-	wsize = fwprintf(stream, L"%ls", wvalue);
-	
-	end:;
-	
-	free(value);
-	free(wvalue);
-	
-	return wsize;
+	return length;
 	
 }
 
 int wio_enable_unicode(void) {
 	
-	int fd = 0;
-	int status = 0;
+	int result = 0;
 	
-	fd = _fileno(stdout);
-	
-	if (fd == -1) {
-		return -1;
+	if (_setmode(_fileno(stdout), _O_WTEXT) == -1) {
+		result = -1;
 	}
 	
-	status = _setmode(fd, _O_WTEXT);
-	
-	if (status == -1) {
-		return -1;
+	if (_setmode(_fileno(stderr), _O_WTEXT) == -1) {
+		result = -1;
 	}
 	
-	fd = _fileno(stderr);
-	
-	if (fd == -1) {
-		return -1;
+	if (_setmode(_fileno(stdin), _O_WTEXT) == -1) {
+		result = -1;
 	}
 	
-	status = _setmode(fd, _O_WTEXT);
-	
-	if (status == -1) {
-		return -1;
-	}
-	
-	fd = _fileno(stdin);
-	
-	if (fd == -1) {
-		return -1;
-	}
-	
-	status = _setmode(fd, _O_WTEXT);
-	
-	if (status == -1) {
-		return -1;
-	}
-	
-	return 0;
+	return result;
 	
 }

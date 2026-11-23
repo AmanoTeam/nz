@@ -6,10 +6,6 @@
 #include <float.h>
 #include <limits.h>
 
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-	#define HAVE_LONG_LONG 1
-#endif
-
 typedef long double bigfloat_t;
 
 #define BIGFLOAT_MIN DBL_MIN
@@ -22,43 +18,23 @@ typedef long double bigfloat_t;
 
 #define strtobf strtold
 
-#if defined(HAVE_LONG_LONG)
-	typedef long long int bigint_t;
-	typedef unsigned long long int biguint_t;
-	
-	#define BIGINT_MIN LLONG_MIN
-	#define BIGINT_MAX LLONG_MAX
-	
-	#define BIGUINT_MIN 0
-	#define BIGUINT_MAX ULLONG_MAX
-	
-	#define FORMAT_BIGGEST_INT_T "lld"
-	#define FORMAT_BIGGEST_UINT_T "llu"
-	
-	#define FORMAT_HEX_BIGGEST_INT_T "ll"
-	#define FORMAT_HEX_BIGGEST_UINT_T "ll"
-	
-	#define strtobi strtoll
-	#define strtobui strtoull
-#else
-	typedef long int bigint_t;
-	typedef unsigned long int biguint_t;
-	
-	#define BIGINT_MIN LONG_MIN
-	#define BIGINT_MAX LONG_MAX
-	
-	#define BIGUINT_MIN 0
-	#define BIGUINT_MAX ULONG_MAX
-	
-	#define FORMAT_BIGGEST_INT_T "ld"
-	#define FORMAT_BIGGEST_UINT_T "lu"
-	
-	#define FORMAT_HEX_BIGGEST_INT_T "l"
-	#define FORMAT_HEX_BIGGEST_UINT_T "l"
-	
-	#define strtobi strtol
-	#define strtobui strtoul
-#endif
+typedef long long int bigint_t;
+typedef unsigned long long int biguint_t;
+
+#define BIGINT_MIN LLONG_MIN
+#define BIGINT_MAX LLONG_MAX
+
+#define BIGUINT_MIN 0
+#define BIGUINT_MAX ULLONG_MAX
+
+#define FORMAT_BIGGEST_INT_T "lld"
+#define FORMAT_BIGGEST_UINT_T "llu"
+
+#define FORMAT_HEX_BIGGEST_INT_T "ll"
+#define FORMAT_HEX_BIGGEST_UINT_T "ll"
+
+#define strtobi strtoll
+#define strtobui strtoull
 
 bigint_t ptobigint(const void* const pointer);
 biguint_t ptobiguint(const void* const pointer);

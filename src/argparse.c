@@ -248,10 +248,9 @@ const arg_t* argparse_getnext(argparse_t* const parser) {
 static void argument_free(arg_t* const argument) {
 	
 	free(argument->key);
-	argument->key = NULL;
-	
 	free(argument->value);
-	argument->value = NULL;
+	
+	memset(argument, 0, sizeof(*argument));
 	
 }
 
@@ -261,19 +260,13 @@ void argparse_free(argparse_t* const parser) {
 	
 	arg_t* argument = NULL;
 	
-	parser->index = 0;
-	parser->argc = 0;
-	parser->argv = NULL;
-	
 	for (index = 0; index < parser->arguments.offset; index++) {
 		argument = &parser->arguments.items[index];
 		argument_free(argument);
 	}
 	
-	parser->arguments.offset = 0;
-	parser->arguments.size = 0;
-	
 	free(parser->arguments.items);
-	parser->arguments.items = NULL;
+	
+	memset(parser, 0, sizeof(*parser));
 	
 }

@@ -39,6 +39,7 @@ struct FStream {
 	fstream_mode_t mode;
 #if defined(_WIN32)
 	HANDLE stream;
+	int fd;
 #else
 	FILE* stream;
 #endif

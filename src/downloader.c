@@ -345,14 +345,11 @@ void downloader_free(downloader_t* const downloader) {
 		wcurl_free(&download->wcurl);
 		wcurlerr_free(&download->error);
 		fstream_close(download->stream);
-		download->stream = NULL;
-		download->retries = 0;
 	}
 	
 	free(downloader->items);
-	downloader->items = NULL;
-	downloader->offset = 0;
-	downloader->size = 0;
+	
+	memset(downloader, 0, sizeof(*downloader));
 	
 }
 
@@ -360,9 +357,6 @@ void dlopts_free(dlopts_t* const options) {
 	
 	free(options->temporary_directory);
 	
-	options->temporary_directory = NULL;
-	options->concurrency = 0;
-	options->retry = 0;
-	options->progress_callback = NULL;
+	memset(options, 0, sizeof(*options));
 	
 }

@@ -2,6 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(_WIN32) && defined(_UNICODE)
+	#include "wio.h"
+#endif
+
 #include "package.h"
 #include "term/screen.h"
 #include "pprint.h"

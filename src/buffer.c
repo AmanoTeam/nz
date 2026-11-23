@@ -37,8 +37,8 @@ int buffer_append(buffer_t* const buffer, const char* const data, const size_t s
 
 void buffer_free(buffer_t* const buffer) {
 	
-	buffer->size = 0;
-	buffer->offset = 0;
 	free(buffer->data);
+	
+	memset(buffer, 0, sizeof(*buffer));
 	
 }
