@@ -11,7 +11,6 @@ project(
 option(NOUZEN_LTO "Turn on compiler link-time optimizations" OFF)
 option(NOUZEN_UNICODE "Enable Unicode support for Windows builds" ON)
 option(NOUZEN_DBG "Build the main project with debugging symbols, even in release builds" OFF)
-option(NOUZEN_ASAN "Build with AddressSanitizer for the nz-jni JNI library" OFF)
 option(NOUZEN_BUILD_SHARED "Build the project as a shared library" OFF)
 option(NOUZEN_SSL_VERIFY "Enable SSL certificate verification in the network library" ON)
 
@@ -114,12 +113,6 @@ set(
 if (NOT WIN32 AND NOT NOUZEN_BUILD_SHARED)
 	list(APPEND NOUZEN_SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/strdupshim.c")
 endif()
-
-set(
-	LIBQUERY_JNI_SOURCE_FILES
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/nz-jni.c"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/repository-jni.c"
-)
 
 set(
 	TARGETS
@@ -570,19 +563,6 @@ if (NOUZEN_BUILD_SHARED)
 		SHARED
 		${NOUZEN_SOURCE_FILES}
 	)
-	
-	add_library(
-		nz-jni
-		SHARED
-		${LIBQUERY_JNI_SOURCE_FILES}
-	)
-
-	target_link_libraries(nz-jni PRIVATE nz)
-
-	if (NOUZEN_ASAN)
-		target_compile_options(nz-jni PRIVATE -fsanitize=address)
-		target_link_options(nz-jni PRIVATE -fsanitize=address)
-	endif()
 else()
 	add_executable(
 		nz
