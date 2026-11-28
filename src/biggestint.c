@@ -9,6 +9,10 @@
 #define NUMERATOR 1233
 #define SHIFT 12
 
+#if !defined(ULLONG_WIDTH)
+	#define ULLONG_WIDTH 64
+#endif
+
 static const unsigned long long POWERS[] = {
 	1ULL,
 	10ULL,
